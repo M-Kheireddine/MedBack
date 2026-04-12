@@ -28,6 +28,6 @@ public class UserService implements IUserService {
     public UserResponseDto getUserById(String userId) {
         return this.userRepository.findById(UUID.fromString(userId))
                 .map(userMapper::toUserResponseDto)
-                .orElseGet(null);
+                .orElse(null);
     }
 }

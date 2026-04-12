@@ -7,9 +7,9 @@ spring:
     discovery:
       enabled: false
   datasource:
-    url: jdbc:postgresql://localhost:5432/MED_USER_DB
-    username: postgres
-    password: MED_USER_PASSWORD
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:MED_USER_DB}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:MED_USER_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -19,8 +19,12 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
 server:
   port: 8081
+  servlet:
+    context-path: /api
+
 management:
   endpoints:
     web:

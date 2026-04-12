@@ -1,0 +1,32 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: med-user-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - postgres_user_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  med-user-service:
+    build:
+      context: .
+      dockerfile: MedUserService/Dockerfile
+    container_name: med-user-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_user_data:
