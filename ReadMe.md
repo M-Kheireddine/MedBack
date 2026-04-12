@@ -10,6 +10,7 @@ ___
 | MicroService   | Port | Description              |
 |----------------|------|--------------------------|
 | MedUserService | 8081 | Gestion des utilisateurs |
+| MedCoreService | 8083 | Service core             |
 
 
 ___
