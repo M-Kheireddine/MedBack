@@ -1,0 +1,10 @@
+<settings>
+    <mirrors>
+        <mirror>
+            <id>central-mirror</id>
+            <name>Maven Central Mirror</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <mirrorOf>external:*</mirrorOf>
+        </mirror>
+    </mirrors>
+</settings>
