@@ -5,6 +5,6 @@ public class ApiUtils {
 
     private static final String USER_API = "/users";
 
-    public static final String USERS_GET_ALL_USERS = VERSION_1 + USER_API;
-    public static final String USERS_GET_USER_BY_ID = VERSION_1 + USER_API + "/{userId}";
+    public static final String API_GET_ALL_USERS = VERSION_1 + USER_API;
+    public static final String API_GET_USER_BY_ID = VERSION_1 + USER_API + "/{userId}";
 }

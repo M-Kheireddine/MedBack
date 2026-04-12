@@ -12,9 +12,9 @@ import java.util.List;
 @RequestMapping
 public interface IUserController {
 
-    @GetMapping(ApiUtils.USERS_GET_ALL_USERS)
+    @GetMapping(ApiUtils.API_GET_ALL_USERS)
     ResponseEntity<List<UserResponseDto>> getAllUsers();
 
-    @GetMapping(ApiUtils.USERS_GET_USER_BY_ID)
+    @GetMapping(ApiUtils.API_GET_USER_BY_ID)
     ResponseEntity<UserResponseDto> getUserById(@PathVariable("userId") String userId);
 }
