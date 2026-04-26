@@ -1,11 +1,13 @@
 spring:
   application:
-    name: MedCoreService
+    name: MED_CORE_SERVICE
+  config:
+    import: "optional:configserver:"
   cloud:
     config:
       enabled: false
     discovery:
-      enabled: false
+      enabled: true
   mongodb:
     uri: ${SPRING_DATA_MONGODB_URI:mongodb://MED_CORE_USER:MED_CORE_PASSWORD@localhost:27017/MED_CORE_DB?authSource=admin}
 

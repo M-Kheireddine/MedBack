@@ -1,11 +1,13 @@
 spring:
   application:
     name: MED_CHATBOT_SERVICE
+  config:
+    import: "optional:configserver:"
   cloud:
     config:
       enabled: false
     discovery:
-      enabled: false
+      enabled: true
 
 server:
   port: 8084
