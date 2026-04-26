@@ -1,6 +1,8 @@
 spring:
   application:
     name: MED_DISCOVERY_SERVICE
+  config:
+    import: "optional:configserver:"
 
 eureka:
   client:
