@@ -11,6 +11,7 @@ ___
 |------------------------|------|---------------------------|
 | MedUserService         | 8081 | Gestion des utilisateurs  |
 | MedCoreService         | 8083 | Service core              |
+| MedChatBootService     | 8084 | ChatBoot                  |
 | MedNotificationService | 8085 | Gestion des notifications |
 
 
@@ -21,6 +22,11 @@ ___
 
 ___
 #### MedCoreService
+##### Description:
+##### Diagramme de classes:
+
+___
+#### MedChatBootService
 ##### Description:
 ##### Diagramme de classes:
 

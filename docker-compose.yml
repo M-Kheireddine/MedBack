@@ -64,6 +64,19 @@ services:
     networks:
       - med-network
 
+  med-chatboot-service:
+    build:
+      context: .
+      dockerfile: MedChatBootService/Dockerfile
+    container_name: med-chatboot-service
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    env_file:
+      - .env
+    networks:
+      - med-network
+
   med-notification-service:
     build:
       context: .
