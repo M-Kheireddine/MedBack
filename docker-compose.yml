@@ -64,6 +64,19 @@ services:
     networks:
       - med-network
 
+  med-notification-service:
+    build:
+      context: .
+      dockerfile: MedNotificationService/Dockerfile
+    container_name: med-notification-service
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    env_file:
+      - .env
+    networks:
+      - med-network
+
 volumes:
   postgres_user_data:
   mongo_core_data:

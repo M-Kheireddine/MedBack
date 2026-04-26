@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: MED_NOTIFICATION_SERVICE
+  cloud:
+    config:
+      enabled: false
+    discovery:
+      enabled: false
+
+server:
+  port: 8085
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, refresh

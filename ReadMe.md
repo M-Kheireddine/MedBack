@@ -7,13 +7,24 @@ ___
 
 ### Microservices - Ports Mapping
 
-| MicroService   | Port | Description              |
-|----------------|------|--------------------------|
-| MedUserService | 8081 | Gestion des utilisateurs |
-| MedCoreService | 8083 | Service core             |
+| MicroService           | Port | Description               |
+|------------------------|------|---------------------------|
+| MedUserService         | 8081 | Gestion des utilisateurs  |
+| MedCoreService         | 8083 | Service core              |
+| MedNotificationService | 8085 | Gestion des notifications |
 
 
 ___
 #### MedUserService
+##### Description:
+##### Diagramme de classes:
+
+___
+#### MedCoreService
+##### Description:
+##### Diagramme de classes:
+
+___
+#### MedNotificationService
 ##### Description:
 ##### Diagramme de classes:
