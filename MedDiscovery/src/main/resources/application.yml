@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: MED_DISCOVERY_SERVICE
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    enable-self-preservation: false
+  instance:
+    hostname: med-discovery-service
+
+server:
+  port: 8761
