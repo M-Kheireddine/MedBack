@@ -28,6 +28,19 @@ services:
     networks:
       - med-network
 
+  med-discovery-service:
+    build:
+      context: .
+      dockerfile: MedDiscovery/Dockerfile
+    container_name: med-discovery-service
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    env_file:
+      - .env
+    networks:
+      - med-network
+
   med-user-service:
     build:
       context: .
@@ -44,6 +57,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     depends_on:
       - postgres
+      - med-discovery-service
     networks:
       - med-network
 
@@ -61,6 +75,7 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/${MONGO_DATABASE}?authSource=admin
     depends_on:
       - mongo
+      - med-discovery-service
     networks:
       - med-network
 
@@ -74,6 +89,8 @@ services:
       - "8084:8084"
     env_file:
       - .env
+    depends_on:
+      - med-discovery-service
     networks:
       - med-network
 
@@ -87,6 +104,8 @@ services:
       - "8085:8085"
     env_file:
       - .env
+    depends_on:
+      - med-discovery-service
     networks:
       - med-network
 

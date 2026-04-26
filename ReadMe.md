@@ -13,6 +13,7 @@ ___
 | MedCoreService         | 8083 | Service core              |
 | MedChatBootService     | 8084 | ChatBoot                  |
 | MedNotificationService | 8085 | Gestion des notifications |
+| MedDiscovery           | 8761 | Discovery                 |
 
 
 ___
@@ -32,5 +33,10 @@ ___
 
 ___
 #### MedNotificationService
+##### Description:
+##### Diagramme de classes:
+
+___
+#### MedDiscovery
 ##### Description:
 ##### Diagramme de classes:

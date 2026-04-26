@@ -33,4 +33,7 @@ management:
       exposure:
         include: health, refresh
 
-
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
