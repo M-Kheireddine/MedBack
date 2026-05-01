@@ -14,6 +14,7 @@ ___
 | MedChatBootService     | 8084 | ChatBoot                  |
 | MedNotificationService | 8085 | Gestion des notifications |
 | MedDiscovery           | 8761 | Discovery                 |
+| MedConfigService       | 8086 | Gestion des Configs       |
 
 
 ___

@@ -1,0 +1,17 @@
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: file:C:/Users/kmechergui/Desktop/PFA/MedConfigs
+          default-label: main
+          search-paths: '{profile}'
+  application:
+    name: MED_CONFIG_SERVICE
+
+server:
+  port: 8086
+  servlet:
+    context-path: /api
+
+

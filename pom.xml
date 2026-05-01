@@ -17,6 +17,7 @@
         <module>MedDiscovery</module>
         <module>MedNotificationService</module>
         <module>MedChatBootService</module>
+        <module>MedConfigService</module>
     </modules>
 
     <groupId>tn.iteam</groupId>
