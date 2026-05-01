@@ -11,6 +11,7 @@
     </parent>
 
     <modules>
+        <module>MedGateway</module>
         <module>MedUserService</module>
         <module>MedCoreService</module>
         <module>MedDiscovery</module>
