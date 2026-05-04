@@ -3,7 +3,7 @@ spring:
     config:
       server:
         git:
-          uri: file:C:/Users/kmechergui/Desktop/PFA/MedConfigs
+          uri: file:/config-repo
           default-label: main
           search-paths: '{profile}'
   application:

@@ -1,28 +1,7 @@
 spring:
   application:
-    name: MED_CORE_SERVICE
+    name: med-core-service
   config:
-    import: "optional:configserver:"
-  cloud:
-    config:
-      enabled: false
-    discovery:
-      enabled: true
-  mongodb:
-    uri: ${SPRING_DATA_MONGODB_URI:mongodb://MED_CORE_USER:MED_CORE_PASSWORD@localhost:27017/MED_CORE_DB?authSource=admin}
-
-server:
-  port: 8083
-  servlet:
-    context-path: /api
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health, refresh
-
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+    import: optional:configserver:http://localhost:8086/api/
+  profiles:
+    active: local

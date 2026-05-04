@@ -28,6 +28,29 @@ services:
     networks:
       - med-network
 
+  med-config-service:
+    build:
+      context: .
+      dockerfile: MedConfigService/Dockerfile
+    container_name: med-config-service
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
+    volumes:
+      - C:/Users/kmechergui/Desktop/PFA/MedConfigs:/config-repo
+    networks:
+      - med-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8086/api/actuator/health" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
   med-discovery-service:
     build:
       context: .
@@ -38,6 +61,9 @@ services:
       - "8761:8761"
     env_file:
       - .env
+    depends_on:
+      med-config-service:
+        condition: service_healthy
     networks:
       - med-network
 
@@ -55,9 +81,17 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_APPLICATION_NAME: ${USER_SERVICE_NAME}
+      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
+      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
     depends_on:
-      - postgres
-      - med-discovery-service
+      postgres:
+        condition: service_started
+      med-config-service:
+        condition: service_healthy
+      med-discovery-service:
+        condition: service_started
     networks:
       - med-network
 
@@ -73,9 +107,16 @@ services:
       - .env
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/${MONGO_DATABASE}?authSource=admin
+      SPRING_APPLICATION_NAME: ${CORE_SERVICE_NAME}
+      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
     depends_on:
-      - mongo
-      - med-discovery-service
+      mongo:
+        condition: service_started
+      med-config-service:
+        condition: service_healthy
+      med-discovery-service:
+        condition: service_started
     networks:
       - med-network
 
@@ -89,8 +130,15 @@ services:
       - "8084:8084"
     env_file:
       - .env
+    environment:
+      SPRING_APPLICATION_NAME: ${CHATBOOT_SERVICE_NAME}
+      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
     depends_on:
-      - med-discovery-service
+      med-config-service:
+        condition: service_healthy
+      med-discovery-service:
+        condition: service_started
     networks:
       - med-network
 
@@ -104,8 +152,15 @@ services:
       - "8085:8085"
     env_file:
       - .env
+    environment:
+      SPRING_APPLICATION_NAME: ${NOTIFICATION_SERVICE_NAME}
+      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
+      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
     depends_on:
-      - med-discovery-service
+      med-config-service:
+        condition: service_healthy
+      med-discovery-service:
+        condition: service_started
     networks:
       - med-network
 
