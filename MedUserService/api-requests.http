@@ -1,0 +1,50 @@
+@baseUrl = http://localhost:8081/api
+@token = {{signin.response.body.access_token}}
+
+### 1. Sign Up (Create an Admin)
+POST {{baseUrl}}/v1/auth/signup
+Content-Type: application/json
+
+{
+  "firstname": "John",
+  "lastname": "Doe",
+  "email": "johndoe@example.com",
+  "username": "adminUser",
+  "password": "securePassword123",
+  "role": "admin"
+}
+
+### 2. Sign Up (Create a Patient)
+POST {{baseUrl}}/v1/auth/signup
+Content-Type: application/json
+
+{
+  "firstname": "Jane",
+  "lastname": "Smith",
+  "email": "janesmith@example.com",
+  "username": "patientUser",
+  "password": "securePassword123",
+  "role": "patient"
+}
+
+### 3. Sign In
+# @name signin
+POST {{baseUrl}}/v1/auth/signin
+Content-Type: application/json
+
+{
+  "username": "adminUser",
+  "password": "securePassword123"
+}
+
+### 4. Get All Users
+# Requires a valid access token obtained from the Sign In request
+GET {{baseUrl}}/v1/users
+Authorization: Bearer {{token}}
+
+### 5. Get User By ID
+# Requires a valid access token
+# Replace {userId} with a valid UUID obtained from Keycloak or the Get All Users endpoint
+@userId = 123e4567-e89b-12d3-a456-426614174000
+GET {{baseUrl}}/v1/users/{{userId}}
+Authorization: Bearer {{token}}

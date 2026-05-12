@@ -220,10 +220,44 @@ services:
     networks:
       - med-network
 
+  keycloak-db:
+    image: postgres:16-alpine
+    container_name: med-keycloak-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DB_NAME}
+      POSTGRES_USER: ${KEYCLOAK_DB_USERNAME}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    volumes:
+      - keycloak_data:/var/lib/postgresql/data
+    networks:
+      - med-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.2
+    container_name: med-keycloak
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USERNAME}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DB_NAME}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USERNAME}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    command: start-dev
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_started
+    networks:
+      - med-network
+
 volumes:
   postgres_user_data:
   mongo_core_data:
   grafana_data:
+  keycloak_data:
 
 networks:
   med-network:

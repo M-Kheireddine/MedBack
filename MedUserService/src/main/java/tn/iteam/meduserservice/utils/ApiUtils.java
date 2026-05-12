@@ -7,4 +7,8 @@ public class ApiUtils {
 
     public static final String API_GET_ALL_USERS = VERSION_1 + USER_API;
     public static final String API_GET_USER_BY_ID = VERSION_1 + USER_API + "/{userId}";
+
+    private static final String AUTH_API = "/auth";
+    public static final String API_AUTH_SIGNUP = VERSION_1 + AUTH_API + "/signup";
+    public static final String API_AUTH_SIGNIN = VERSION_1 + AUTH_API + "/signin";
 }

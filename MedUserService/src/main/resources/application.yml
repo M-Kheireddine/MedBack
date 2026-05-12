@@ -17,3 +17,19 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+
+keycloak:
+  server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8080}
+  realm: ${KEYCLOAK_REALM:medback}
+  client-id: ${KEYCLOAK_CLIENT_ID:med-client}
+  admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+  admin-username: ${KEYCLOAK_ADMIN_USERNAME:admin}
+  admin-password: ${KEYCLOAK_ADMIN_PASSWORD:admin}
+  client-secret: ${KEYCLOAK_CLIENT_SECRET:secret}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8080}/realms/${KEYCLOAK_REALM:medback}
