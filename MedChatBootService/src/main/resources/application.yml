@@ -2,6 +2,43 @@ spring:
   application:
     name: med-chatboot-service
   config:
-    import: optional:configserver:http://localhost:8086/api/
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8086/api}
   profiles:
-    active: local
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        model: ${OPENAI_CHAT_MODEL:gpt-5-mini}
+        temperature: ${OPENAI_CHAT_TEMPERATURE:0.2}
+
+server:
+  port: ${MED_CHATBOT_SERVICE_PORT:8084}
+  servlet:
+    context-path: /api
+
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+
+medback:
+  chatbot:
+    system-prompt: >
+      You are an Expert Medical Assistant for the MedBack platform. Provide clear,
+      cautious, evidence-informed medical guidance for doctors and patients. Do not
+      claim to replace a licensed physician, do not provide definitive diagnosis,
+      and recommend urgent medical care for emergency symptoms. Keep answers concise,
+      professional, and in the same language as the user's message when possible.
