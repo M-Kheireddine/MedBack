@@ -2,8 +2,13 @@ package tn.iteam.medcoreservice.repositories;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
-import tn.iteam.medcoreservice.models.PrescriptionEntity;
+import tn.iteam.medcoreservice.models.Prescription;
+
+import java.util.List;
 
 @Repository
-public interface PrescriptionRepository extends MongoRepository<PrescriptionEntity, String> {
+public interface PrescriptionRepository extends MongoRepository<Prescription, String> {
+    List<Prescription> findByDoctorIdOrderByCreatedAtDesc(String doctorId);
+
+    List<Prescription> findByPatientIdOrderByCreatedAtDesc(String patientId);
 }

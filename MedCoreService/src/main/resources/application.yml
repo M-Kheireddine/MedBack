@@ -1,19 +1,61 @@
+server:
+  port: ${MED_CORE_SERVICE_PORT:8083}
+  servlet:
+    context-path: /api
+
 spring:
   application:
     name: med-core-service
   config:
-    import: optional:configserver:http://localhost:8086/api/
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8086/api}
   profiles:
-    active: local
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://MED_CORE_USER:MED_CORE_PASSWORD@localhost:27017/MED_CORE_DB?authSource=admin}
+      auto-index-creation: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
+      client-id: med-core-service-producer
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    consumer:
-      group-id: med-core-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      acks: all
+      retries: 3
       properties:
-        spring.json.trusted.packages: "*"
+        enable.idempotence: true
+        spring.json.add.type.headers: false
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+medback:
+  kafka:
+    topics:
+      appointment: appointment_topic
+      prescription: prescription_topic

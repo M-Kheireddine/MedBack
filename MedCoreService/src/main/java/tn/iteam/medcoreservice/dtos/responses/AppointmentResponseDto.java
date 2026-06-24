@@ -5,26 +5,25 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import tn.iteam.medcoreservice.models.PrescriptionLine;
+import tn.iteam.medcoreservice.models.AppointmentStatus;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class PrescriptionResponseDto implements Serializable {
+public class AppointmentResponseDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
     private String id;
     private String doctorId;
     private String patientId;
-    private LocalDateTime createdAt;
-    private String doctorNotes;
-    private List<PrescriptionLine> prescriptionLines;
+    private LocalDateTime dateTime;
+    private AppointmentStatus status;
+    private String reason;
 }

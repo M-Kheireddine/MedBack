@@ -1,15 +1,17 @@
-package tn.iteam.medcoreservice.dtos.responses;
+package tn.iteam.medcoreservice.dtos.requests;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import tn.iteam.medcoreservice.models.PrescriptionLine;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -17,14 +19,22 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-public class PrescriptionResponseDto implements Serializable {
+public class PrescriptionRequestDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private String id;
+    @NotBlank
     private String doctorId;
+
+    @NotBlank
     private String patientId;
-    private LocalDateTime createdAt;
+
     private String doctorNotes;
-    private List<PrescriptionLine> prescriptionLines;
+
+    @Valid
+    @NotEmpty
+    private List<PrescriptionLineRequestDto> prescriptionLines;
+
+    @Email
+    private String recipientEmail;
 }
