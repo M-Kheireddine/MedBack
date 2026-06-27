@@ -2,6 +2,26 @@ spring:
   application:
     name: med-gateway-service
   config:
-    import: optional:configserver:http://localhost:8086/api/
+    import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8086/api}
   profiles:
-    active: local
+    active: ${SPRING_PROFILES_ACTIVE:local}
+
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, gateway, metrics, prometheus
+  endpoint:
+    gateway:
+      access: read-only
