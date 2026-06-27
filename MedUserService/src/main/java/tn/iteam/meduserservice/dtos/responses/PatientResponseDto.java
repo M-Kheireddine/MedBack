@@ -5,27 +5,21 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import tn.iteam.meduserservice.models.Role;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder(toBuilder = true)
-public class UserResponseDto implements Serializable {
+public class PatientResponseDto extends UserResponseDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private UUID id;
-    private String firstName;
-    private String lastName;
-    private String email;
-    private Role role;
-    private LocalDateTime createdAt;
-    private Boolean isActive;
+    private LocalDate birthDate;
+    private String socialSecurityNumber;
+    private String bloodType;
 }

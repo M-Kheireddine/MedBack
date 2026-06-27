@@ -1,7 +1,5 @@
-package tn.iteam.meduserservice.models;
+package tn.iteam.meduserservice.dtos.responses;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,21 +8,19 @@ import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.UUID;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Entity
-public class AccountEntity implements Serializable {
+public class AuthResponseDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Id
-    private UUID accountId;
-    private String username;
-    private String email;
-    private String password;
+    private String accessToken;
+    private String tokenType;
+    private LocalDateTime expiresAt;
+    private UserResponseDto user;
 }

@@ -4,16 +4,34 @@ spring:
   config:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8086/api}
   profiles:
-    active: local
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-    consumer:
-      group-id: med-user-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  jpa:
+    open-in-view: false
+
+server:
+  port: ${MED_USER_SERVICE_PORT:8081}
+  servlet:
+    context-path: /api
+
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus
+
+medback:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:medback-jwt-secret-key-for-development-only-please-change}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:1440}
