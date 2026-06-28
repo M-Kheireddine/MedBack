@@ -3,15 +3,16 @@ spring:
     config:
       server:
         git:
-          uri: file:/config-repo
+          uri: ${CONFIG_REPO_URI:file:///C:/Users/kmechergui/Desktop/PFA/MedConfigs}
           default-label: main
           search-paths: '{profile}'
   application:
     name: MED_CONFIG_SERVICE
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
 server:
   port: 8086
   servlet:
     context-path: /api
-
 

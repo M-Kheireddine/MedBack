@@ -23,10 +23,12 @@ public class ChatbotServiceImpl implements ChatbotService {
             return ChatResponse.builder()
                     .reply(reply)
                     .build();
-        } catch (RuntimeException exception) {
-            throw new ChatbotUnavailableException("Medical assistant is temporarily unavailable.", exception);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        return null;
     }
+
 
     private String buildPrompt(ChatRequest request) {
         if (request.getDoctorId() == null || request.getDoctorId().isBlank()) {
