@@ -28,150 +28,150 @@ services:
     networks:
       - med-network
 
-  med-config-service:
-    build:
-      context: .
-      dockerfile: MedConfigService/Dockerfile
-    container_name: med-config-service
-    restart: unless-stopped
-    ports:
-      - "8086:8086"
-    env_file:
-      - .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
-    volumes:
-      - C:/Users/kmechergui/Desktop/PFA/MedConfigs:/config-repo
-    networks:
-      - med-network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8086/api/actuator/health" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
-
-  med-discovery-service:
-    build:
-      context: .
-      dockerfile: MedDiscovery/Dockerfile
-    container_name: med-discovery-service
-    restart: unless-stopped
-    ports:
-      - "8761:8761"
-    env_file:
-      - .env
-    depends_on:
-      med-config-service:
-        condition: service_healthy
-    networks:
-      - med-network
-
-  med-user-service:
-    build:
-      context: .
-      dockerfile: MedUserService/Dockerfile
-    container_name: med-user-service
-    restart: unless-stopped
-    ports:
-      - "8081:8081"
-    env_file:
-      - .env
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SPRING_APPLICATION_NAME: ${USER_SERVICE_NAME}
-      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
-      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
-      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-    depends_on:
-      postgres:
-        condition: service_started
-      med-config-service:
-        condition: service_healthy
-      med-discovery-service:
-        condition: service_started
-      kafka:
-        condition: service_started
-    networks:
-      - med-network
-
-  med-core-service:
-    build:
-      context: .
-      dockerfile: MedCoreService/Dockerfile
-    container_name: med-core-service
-    restart: unless-stopped
-    ports:
-      - "8083:8083"
-    env_file:
-      - .env
-    environment:
-      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/${MONGO_DATABASE}?authSource=admin
-      SPRING_APPLICATION_NAME: ${CORE_SERVICE_NAME}
-      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
-      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-    depends_on:
-      mongo:
-        condition: service_started
-      med-config-service:
-        condition: service_healthy
-      med-discovery-service:
-        condition: service_started
-      kafka:
-        condition: service_started
-    networks:
-      - med-network
-
-  med-chatboot-service:
-    build:
-      context: .
-      dockerfile: MedChatBootService/Dockerfile
-    container_name: med-chatboot-service
-    restart: unless-stopped
-    ports:
-      - "8084:8084"
-    env_file:
-      - .env
-    environment:
-      SPRING_APPLICATION_NAME: ${CHATBOOT_SERVICE_NAME}
-      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
-      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
-    depends_on:
-      med-config-service:
-        condition: service_healthy
-      med-discovery-service:
-        condition: service_started
-    networks:
-      - med-network
-
-  med-notification-service:
-    build:
-      context: .
-      dockerfile: MedNotificationService/Dockerfile
-    container_name: med-notification-service
-    restart: unless-stopped
-    ports:
-      - "8085:8085"
-    env_file:
-      - .env
-    environment:
-      SPRING_APPLICATION_NAME: ${NOTIFICATION_SERVICE_NAME}
-      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
-      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-    depends_on:
-      med-config-service:
-        condition: service_healthy
-      med-discovery-service:
-        condition: service_started
-      kafka:
-        condition: service_started
-    networks:
-      - med-network
+#  med-config-service:
+#    build:
+#      context: .
+#      dockerfile: MedConfigService/Dockerfile
+#    container_name: med-config-service
+#    restart: unless-stopped
+#    ports:
+#      - "8086:8086"
+#    env_file:
+#      - .env
+#    environment:
+#      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
+#    volumes:
+#      - C:/Users/kmechergui/Desktop/PFA/MedConfigs:/config-repo
+#    networks:
+#      - med-network
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:8086/api/actuator/health" ]
+#      interval: 5s
+#      timeout: 3s
+#      retries: 10
+#      start_period: 10s
+#
+#  med-discovery-service:
+#    build:
+#      context: .
+#      dockerfile: MedDiscovery/Dockerfile
+#    container_name: med-discovery-service
+#    restart: unless-stopped
+#    ports:
+#      - "8761:8761"
+#    env_file:
+#      - .env
+#    depends_on:
+#      med-config-service:
+#        condition: service_healthy
+#    networks:
+#      - med-network
+#
+#  med-user-service:
+#    build:
+#      context: .
+#      dockerfile: MedUserService/Dockerfile
+#    container_name: med-user-service
+#    restart: unless-stopped
+#    ports:
+#      - "8081:8081"
+#    env_file:
+#      - .env
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+#      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+#      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+#      SPRING_APPLICATION_NAME: ${USER_SERVICE_NAME}
+#      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
+#      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
+#      EUREKA_SERVER_URL: ${EUREKA_SERVER_URL}
+#      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#    depends_on:
+#      postgres:
+#        condition: service_started
+#      med-config-service:
+#        condition: service_healthy
+#      med-discovery-service:
+#        condition: service_started
+#      kafka:
+#        condition: service_started
+#    networks:
+#      - med-network
+#
+#  med-core-service:
+#    build:
+#      context: .
+#      dockerfile: MedCoreService/Dockerfile
+#    container_name: med-core-service
+#    restart: unless-stopped
+#    ports:
+#      - "8083:8083"
+#    env_file:
+#      - .env
+#    environment:
+#      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongo:27017/${MONGO_DATABASE}?authSource=admin
+#      SPRING_APPLICATION_NAME: ${CORE_SERVICE_NAME}
+#      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
+#      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
+#      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#    depends_on:
+#      mongo:
+#        condition: service_started
+#      med-config-service:
+#        condition: service_healthy
+#      med-discovery-service:
+#        condition: service_started
+#      kafka:
+#        condition: service_started
+#    networks:
+#      - med-network
+#
+#  med-chatboot-service:
+#    build:
+#      context: .
+#      dockerfile: MedChatBootService/Dockerfile
+#    container_name: med-chatboot-service
+#    restart: unless-stopped
+#    ports:
+#      - "8084:8084"
+#    env_file:
+#      - .env
+#    environment:
+#      SPRING_APPLICATION_NAME: ${CHATBOOT_SERVICE_NAME}
+#      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
+#      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
+#    depends_on:
+#      med-config-service:
+#        condition: service_healthy
+#      med-discovery-service:
+#        condition: service_started
+#    networks:
+#      - med-network
+#
+#  med-notification-service:
+#    build:
+#      context: .
+#      dockerfile: MedNotificationService/Dockerfile
+#    container_name: med-notification-service
+#    restart: unless-stopped
+#    ports:
+#      - "8085:8085"
+#    env_file:
+#      - .env
+#    environment:
+#      SPRING_APPLICATION_NAME: ${NOTIFICATION_SERVICE_NAME}
+#      SPRING_CONFIG_IMPORT: optional:configserver:${CONFIG_SERVER_URL}
+#      SPRING_PROFILES_ACTIVE: ${ACTIVE_PROFILE}
+#      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+#    depends_on:
+#      med-config-service:
+#        condition: service_healthy
+#      med-discovery-service:
+#        condition: service_started
+#      kafka:
+#        condition: service_started
+#    networks:
+#      - med-network
 
   kafka:
     image: confluentinc/cp-kafka:7.4.4
