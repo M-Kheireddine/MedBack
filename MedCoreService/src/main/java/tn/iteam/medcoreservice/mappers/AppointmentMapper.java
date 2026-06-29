@@ -1,16 +1,39 @@
 package tn.iteam.medcoreservice.mappers;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.springframework.stereotype.Component;
 import tn.iteam.medcoreservice.dtos.requests.AppointmentRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.AppointmentResponseDto;
 import tn.iteam.medcoreservice.models.Appointment;
+import tn.iteam.medcoreservice.models.AppointmentStatus;
 
-@Mapper(componentModel = "spring")
-public interface AppointmentMapper {
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "status", constant = "SCHEDULED")
-    Appointment toAppointment(AppointmentRequestDto requestDto);
+@Component
+public class AppointmentMapper {
+    public Appointment toAppointment(AppointmentRequestDto requestDto) {
+        if (requestDto == null) {
+            return null;
+        }
 
-    AppointmentResponseDto toAppointmentResponseDto(Appointment appointment);
+        return Appointment.builder()
+                .doctorId(requestDto.getDoctorId())
+                .patientId(requestDto.getPatientId())
+                .dateTime(requestDto.getDateTime())
+                .status(AppointmentStatus.SCHEDULED)
+                .reason(requestDto.getReason())
+                .build();
+    }
+
+    public AppointmentResponseDto toAppointmentResponseDto(Appointment appointment) {
+        if (appointment == null) {
+            return null;
+        }
+
+        return AppointmentResponseDto.builder()
+                .id(appointment.getId())
+                .doctorId(appointment.getDoctorId())
+                .patientId(appointment.getPatientId())
+                .dateTime(appointment.getDateTime())
+                .status(appointment.getStatus())
+                .reason(appointment.getReason())
+                .build();
+    }
 }

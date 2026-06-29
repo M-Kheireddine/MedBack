@@ -10,10 +10,6 @@ spring:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8086/api}
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
-  data:
-    mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI:mongodb://MED_CORE_USER:MED_CORE_PASSWORD@localhost:27017/MED_CORE_DB?authSource=admin}
-      auto-index-creation: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
@@ -27,7 +23,8 @@ spring:
         spring.json.add.type.headers: false
     properties:
       security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
-
+  mongodb:
+    uri: ${SPRING_DATA_MONGODB_URI:mongodb://MED_CORE_USER:MED_CORE_PASSWORD@localhost:27017/MED_CORE_DB?authSource=admin}
 eureka:
   client:
     enabled: ${EUREKA_CLIENT_ENABLED:true}
