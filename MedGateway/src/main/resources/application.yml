@@ -1,10 +1,53 @@
 spring:
+  main:
+    web-application-type: reactive
   application:
     name: med-gateway-service
   config:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8086/api}
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin RETAIN_FIRST
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - ${FRONTEND_ORIGIN:http://localhost:4200}
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - PATCH
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+          routes:
+            - id: med-user-service
+              uri: lb://med-user-service
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/admin/doctors/**,/api/v1/admin/patients/**
+            - id: med-core-service
+              uri: lb://med-core-service
+              predicates:
+                - Path=/api/v1/admin/medications/**,/api/v1/medications/**,/api/v1/public/medications/**,/api/v1/appointments/**,/api/v1/prescriptions/**,/api/uploads/medications/**
+            - id: med-chatboot-service
+              uri: lb://med-chatboot-service
+              predicates:
+                - Path=/api/v1/chat/**
+            - id: med-notification-service
+              uri: lb://med-notification-service
+              predicates:
+                - Path=/api/v1/notifications/**
 
 eureka:
   client:
@@ -25,3 +68,6 @@ management:
   endpoint:
     gateway:
       access: read-only
+
+server:
+  port: 8080

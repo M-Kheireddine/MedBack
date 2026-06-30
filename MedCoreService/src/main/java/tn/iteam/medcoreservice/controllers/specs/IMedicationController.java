@@ -1,6 +1,5 @@
 package tn.iteam.medcoreservice.controllers.specs;
 
-import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,7 +23,7 @@ import java.util.List;
 public interface IMedicationController {
     @PostMapping(path = ApiUtils.API_ADMIN_CREATE_MEDICATION, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<MedicationResponseDto> createAdminMedication(
-            @Valid @RequestPart("medication") MedicationRequestDto requestDto,
+            @RequestPart("medication") String medicationJson,
             @RequestPart(value = "image", required = false) MultipartFile imageFile
     );
 
@@ -37,7 +36,7 @@ public interface IMedicationController {
     @PutMapping(path = ApiUtils.API_ADMIN_UPDATE_MEDICATION, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     ResponseEntity<MedicationResponseDto> updateAdminMedication(
             @PathVariable("medicationId") String medicationId,
-            @Valid @RequestPart("medication") MedicationRequestDto requestDto,
+            @RequestPart("medication") String medicationJson,
             @RequestPart(value = "image", required = false) MultipartFile imageFile
     );
 
@@ -45,7 +44,7 @@ public interface IMedicationController {
     ResponseEntity<Void> deleteAdminMedication(@PathVariable("medicationId") String medicationId);
 
     @PostMapping(ApiUtils.API_CREATE_MEDICATION)
-    ResponseEntity<MedicationResponseDto> createMedication(@Valid @RequestBody MedicationRequestDto requestDto);
+    ResponseEntity<MedicationResponseDto> createMedication(@jakarta.validation.Valid @RequestBody MedicationRequestDto requestDto);
 
     @GetMapping(ApiUtils.API_GET_ALL_MEDICATIONS)
     ResponseEntity<List<MedicationResponseDto>> getAllMedications();
@@ -55,7 +54,7 @@ public interface IMedicationController {
 
     @PutMapping(ApiUtils.API_UPDATE_MEDICATION)
     ResponseEntity<MedicationResponseDto> updateMedication(@PathVariable("medicationId") String medicationId,
-                                                           @Valid @RequestBody MedicationRequestDto requestDto);
+                                                           @jakarta.validation.Valid @RequestBody MedicationRequestDto requestDto);
 
     @DeleteMapping(ApiUtils.API_DELETE_MEDICATION)
     ResponseEntity<Void> deleteMedication(@PathVariable("medicationId") String medicationId);

@@ -198,10 +198,17 @@ services:
     image: prom/prometheus:latest
     container_name: med-prometheus
     restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
     ports:
       - "9090:9090"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
     networks:
       - med-network
 
@@ -212,7 +219,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
     depends_on:
       - prometheus
     volumes:
@@ -220,10 +229,29 @@ services:
     networks:
       - med-network
 
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    container_name: med-jenkins
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+      - "50000:50000"
+    environment:
+      JENKINS_OPTS: --httpPort=8080
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - med-network
+
 volumes:
   postgres_user_data:
   mongo_core_data:
+  prometheus_data:
   grafana_data:
+  jenkins_home:
 
 networks:
   med-network:

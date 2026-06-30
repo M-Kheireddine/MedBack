@@ -1,5 +1,9 @@
 package tn.iteam.medcoreservice.controllers.impls;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,14 +16,18 @@ import tn.iteam.medcoreservice.services.impls.IMedicationService;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
 public class MedicationController implements IMedicationController {
     private final IMedicationService medicationService;
+    private final ObjectMapper objectMapper;
+    private final Validator validator;
 
     @Override
-    public ResponseEntity<MedicationResponseDto> createAdminMedication(MedicationRequestDto requestDto, MultipartFile imageFile) {
+    public ResponseEntity<MedicationResponseDto> createAdminMedication(String medicationJson, MultipartFile imageFile) {
+        MedicationRequestDto requestDto = parseMedicationRequest(medicationJson);
         return ResponseEntity.status(HttpStatus.CREATED).body(medicationService.createAdminMedication(requestDto, imageFile));
     }
 
@@ -34,7 +42,8 @@ public class MedicationController implements IMedicationController {
     }
 
     @Override
-    public ResponseEntity<MedicationResponseDto> updateAdminMedication(String medicationId, MedicationRequestDto requestDto, MultipartFile imageFile) {
+    public ResponseEntity<MedicationResponseDto> updateAdminMedication(String medicationId, String medicationJson, MultipartFile imageFile) {
+        MedicationRequestDto requestDto = parseMedicationRequest(medicationJson);
         return ResponseEntity.ok(medicationService.updateAdminMedication(medicationId, requestDto, imageFile));
     }
 
@@ -93,5 +102,34 @@ public class MedicationController implements IMedicationController {
     @Override
     public ResponseEntity<List<MedicationAutocompleteDto>> autocompleteMedications(String query) {
         return ResponseEntity.ok(medicationService.autocompleteMedications(query));
+    }
+
+    private MedicationRequestDto parseMedicationRequest(String medicationJson) {
+        if (medicationJson == null || medicationJson.isBlank()) {
+            throw new IllegalArgumentException("medication part is required.");
+        }
+
+        try {
+            MedicationRequestDto requestDto = objectMapper.readValue(medicationJson, MedicationRequestDto.class);
+            validateMedicationRequest(requestDto);
+            return requestDto;
+        } catch (JsonProcessingException exception) {
+            throw new IllegalArgumentException("medication part must contain valid JSON.", exception);
+        }
+    }
+
+    private void validateMedicationRequest(MedicationRequestDto requestDto) {
+        Set<ConstraintViolation<MedicationRequestDto>> violations = validator.validate(requestDto);
+        if (violations.isEmpty()) {
+            return;
+        }
+
+        String message = violations.stream()
+                .map(violation -> violation.getPropertyPath() + " " + violation.getMessage())
+                .sorted()
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("Invalid medication payload.");
+
+        throw new IllegalArgumentException(message);
     }
 }

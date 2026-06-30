@@ -1,80 +1,99 @@
-def services = [
-    'MedDiscovery',
-    'MedConfigService',
-    'MedGateway',
-    'MedUserService',
-    'MedCoreService',
-    'MedChatBootService',
-    'MedNotificationService'
+def dockerServices = [
+    [
+        module    : 'MedUserService',
+        dockerfile: 'MedUserService/Dockerfile',
+        imageName : 'medback-user-service'
+    ],
+    [
+        module    : 'MedCoreService',
+        dockerfile: 'MedCoreService/Dockerfile',
+        imageName : 'medback-core-service'
+    ]
 ]
 
 pipeline {
     agent any
 
     options {
-        ansiColor('xterm')
         disableConcurrentBuilds()
+        skipDefaultCheckout(true)
         timestamps()
     }
 
     parameters {
-        string(name: 'DOCKERHUB_NAMESPACE', defaultValue: 'your-dockerhub-namespace', description: 'Docker Hub namespace')
-        string(name: 'DOCKERHUB_CREDENTIALS_ID', defaultValue: 'dockerhub-credentials', description: 'Jenkins credentials id for Docker Hub')
-        string(name: 'SONARQUBE_SERVER', defaultValue: 'SonarQubeServer', description: 'Configured SonarQube server name in Jenkins')
-        string(name: 'SONAR_PROJECT_KEY', defaultValue: 'medback', description: 'SonarQube project key')
-        string(name: 'SONAR_PROJECT_NAME', defaultValue: 'MedBack', description: 'SonarQube project name')
-        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Optional Docker tag override')
+        string(
+            name: 'REPOSITORY_URL',
+            defaultValue: 'https://github.com/M-Kheireddine/MedBack',
+            description: 'Optional Git repository URL used when this job is configured as an inline Pipeline script.'
+        )
+        string(
+            name: 'REPOSITORY_BRANCH',
+            defaultValue: 'main',
+            description: 'Git branch checked out when REPOSITORY_URL is provided.'
+        )
+        string(
+            name: 'DOCKERHUB_NAMESPACE',
+            defaultValue: 'kheireddinemechergui',
+            description: 'Docker Hub namespace used for pushed images.'
+        )
+        string(
+            name: 'DOCKERHUB_CREDENTIALS_ID',
+            defaultValue: '',
+            description: 'Jenkins credentials id containing the Docker Hub username and password/token.'
+        )
+        string(
+            name: 'IMAGE_TAG',
+            defaultValue: '10',
+            description: 'Optional image tag override. When empty, the Jenkins build number is used.'
+        )
+    }
+
+    environment {
+        MAVEN_OPTS = '-Dmaven.test.failure.ignore=false'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
-            }
-        }
-
-        stage('Initialize') {
-            steps {
                 script {
+                    if (binding.hasVariable('scm')) {
+                        checkout scm
+                    } else if (params.REPOSITORY_URL?.trim()) {
+                        git branch: params.REPOSITORY_BRANCH.trim(), url: params.REPOSITORY_URL.trim()
+                    } else {
+                        error("Source checkout is not configured. Use 'Pipeline script from SCM' or provide REPOSITORY_URL and REPOSITORY_BRANCH parameters.")
+                    }
+
                     env.EFFECTIVE_IMAGE_TAG = params.IMAGE_TAG?.trim() ? params.IMAGE_TAG.trim() : env.BUILD_NUMBER
                 }
-            }
-        }
-
-        stage('Maven Build') {
-            steps {
                 sh 'chmod +x mvnw'
-                sh './mvnw clean package -DskipTests'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Test') {
             steps {
-                withSonarQubeEnv("${params.SONARQUBE_SERVER}") {
-                    sh """
-                        ./mvnw sonar:sonar \
-                          -DskipTests \
-                          -Dsonar.projectKey=${params.SONAR_PROJECT_KEY} \
-                          -Dsonar.projectName=${params.SONAR_PROJECT_NAME}
-                    """
-                }
+                sh './mvnw -B -ntp clean test'
             }
         }
 
-        stage('Quality Gate') {
+        stage('Build') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
+                sh './mvnw -B -ntp clean package -DskipTests'
             }
         }
 
         stage('Docker Build') {
             steps {
                 script {
-                    services.each { serviceName ->
-                        def imageName = "${params.DOCKERHUB_NAMESPACE}/${serviceName.toLowerCase()}:${env.EFFECTIVE_IMAGE_TAG}"
-                        sh "docker build -t ${imageName} -f ${serviceName}/Dockerfile ."
+                    dockerServices.each { service ->
+                        String imageRepository = "${params.DOCKERHUB_NAMESPACE}/${service.imageName}"
+                        sh """
+                            docker build \
+                              -f ${service.dockerfile} \
+                              -t ${imageRepository}:${env.EFFECTIVE_IMAGE_TAG} \
+                              -t ${imageRepository}:latest \
+                              .
+                        """
                     }
                 }
             }
@@ -82,20 +101,22 @@ pipeline {
 
         stage('Docker Push') {
             steps {
-                withCredentials([usernamePassword(
+                withCredentials([
+                    usernamePassword(
                         credentialsId: params.DOCKERHUB_CREDENTIALS_ID,
                         usernameVariable: 'DOCKERHUB_USERNAME',
                         passwordVariable: 'DOCKERHUB_PASSWORD'
-                )]) {
+                    )
+                ]) {
                     sh 'echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin'
                     script {
-                        services.each { serviceName ->
-                            def imageName = "${params.DOCKERHUB_NAMESPACE}/${serviceName.toLowerCase()}:${env.EFFECTIVE_IMAGE_TAG}"
-                            sh "docker push ${imageName}"
-                            sh "docker tag ${imageName} ${params.DOCKERHUB_NAMESPACE}/${serviceName.toLowerCase()}:latest"
-                            sh "docker push ${params.DOCKERHUB_NAMESPACE}/${serviceName.toLowerCase()}:latest"
+                        dockerServices.each { service ->
+                            String imageRepository = "${params.DOCKERHUB_NAMESPACE}/${service.imageName}"
+                            sh "docker push ${imageRepository}:${env.EFFECTIVE_IMAGE_TAG}"
+                            sh "docker push ${imageRepository}:latest"
                         }
                     }
+                    sh 'docker logout'
                 }
             }
         }
@@ -104,13 +125,14 @@ pipeline {
     post {
         always {
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'MedUserService/target/*.jar, MedCoreService/target/*.jar'
             cleanWs deleteDirs: true, disableDeferredWipeout: true
         }
         success {
-            echo "MedBack pipeline completed successfully."
+            echo "MedBack CI/CD pipeline completed successfully."
         }
         failure {
-            echo "MedBack pipeline failed. Review the stage logs for details."
+            echo "MedBack CI/CD pipeline failed. Check the Jenkins stage logs for details."
         }
     }
 }

@@ -27,8 +27,21 @@ eureka:
 management:
   endpoints:
     web:
+      base-path: /actuator
       exposure:
         include: health, info, metrics, prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 medback:
   security:
