@@ -4,6 +4,10 @@ server:
     context-path: /api
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:10MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:12MB}
   application:
     name: med-core-service
   config:
@@ -56,3 +60,6 @@ medback:
     topics:
       appointment: appointment_topic
       prescription: prescription_topic
+  storage:
+    medication-image-directory: ${MEDICATION_IMAGE_DIRECTORY:./storage/medications}
+    medication-image-public-path: ${MEDICATION_IMAGE_PUBLIC_PATH:/api/uploads/medications}

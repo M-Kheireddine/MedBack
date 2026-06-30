@@ -2,6 +2,7 @@ package tn.iteam.medcoreservice.utils;
 
 public class ApiUtils {
     private static final String VERSION_1 = "/v1";
+    private static final String ADMIN_API = "/admin";
 
     private static final String APPOINTMENT_API = "/appointments";
     private static final String MEDICATION_API = "/medications";
@@ -18,6 +19,11 @@ public class ApiUtils {
     public static final String API_CANCEL_APPOINTMENT = VERSION_1 + APPOINTMENT_API + "/{appointmentId}/cancel";
     public static final String API_COMPLETE_APPOINTMENT = VERSION_1 + APPOINTMENT_API + "/{appointmentId}/complete";
 
+    public static final String API_ADMIN_CREATE_MEDICATION = VERSION_1 + ADMIN_API + MEDICATION_API;
+    public static final String API_ADMIN_GET_ALL_MEDICATIONS = VERSION_1 + ADMIN_API + MEDICATION_API;
+    public static final String API_ADMIN_GET_MEDICATION_BY_ID = VERSION_1 + ADMIN_API + MEDICATION_API + "/{medicationId}";
+    public static final String API_ADMIN_UPDATE_MEDICATION = VERSION_1 + ADMIN_API + MEDICATION_API + "/{medicationId}";
+    public static final String API_ADMIN_DELETE_MEDICATION = VERSION_1 + ADMIN_API + MEDICATION_API + "/{medicationId}";
     public static final String API_CREATE_MEDICATION = VERSION_1 + MEDICATION_API;
     public static final String API_GET_ALL_MEDICATIONS = VERSION_1 + MEDICATION_API;
     public static final String API_GET_MEDICATION_BY_ID = VERSION_1 + MEDICATION_API + "/{medicationId}";
@@ -25,7 +31,9 @@ public class ApiUtils {
     public static final String API_DELETE_MEDICATION = VERSION_1 + MEDICATION_API + "/{medicationId}";
     public static final String API_SEARCH_MEDICATIONS = VERSION_1 + MEDICATION_API + "/search";
     public static final String API_PUBLIC_GET_ALL_MEDICATIONS = VERSION_1 + PUBLIC_API + MEDICATION_API;
+    public static final String API_PUBLIC_GET_MEDICATION_BY_ID = VERSION_1 + PUBLIC_API + MEDICATION_API + "/{medicationId}";
     public static final String API_PUBLIC_SEARCH_MEDICATIONS = VERSION_1 + PUBLIC_API + MEDICATION_API + "/search";
+    public static final String API_MEDICATION_AUTOCOMPLETE = VERSION_1 + MEDICATION_API + "/autocomplete";
 
     public static final String API_CREATE_PRESCRIPTION = VERSION_1 + PRESCRIPTION_API;
     public static final String API_GET_ALL_PRESCRIPTIONS = VERSION_1 + PRESCRIPTION_API;

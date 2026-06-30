@@ -1,8 +1,14 @@
 package tn.iteam.medcoreservice.services.specs;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import tn.iteam.medcoreservice.dtos.requests.MedicationRequestDto;
+import tn.iteam.medcoreservice.dtos.responses.MedicationAutocompleteDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationResponseDto;
 import tn.iteam.medcoreservice.exceptions.ResourceNotFoundException;
 import tn.iteam.medcoreservice.mappers.MedicationMapper;
@@ -10,17 +16,40 @@ import tn.iteam.medcoreservice.models.Medication;
 import tn.iteam.medcoreservice.repositories.MedicationRepository;
 import tn.iteam.medcoreservice.services.impls.IMedicationService;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class MedicationService implements IMedicationService {
+    private static final int AUTOCOMPLETE_LIMIT = 10;
+
+    @Value("${medback.storage.medication-image-directory:./storage/medications}")
+    private String medicationImageDirectory;
+
+    @Value("${medback.storage.medication-image-public-path:/api/uploads/medications}")
+    private String medicationImagePublicPath;
+
     private final MedicationRepository medicationRepository;
     private final MedicationMapper medicationMapper;
 
     @Override
     public MedicationResponseDto createMedication(MedicationRequestDto requestDto) {
+        return createAdminMedication(requestDto, null);
+    }
+
+    @Override
+    public MedicationResponseDto createAdminMedication(MedicationRequestDto requestDto, MultipartFile imageFile) {
         Medication medication = medicationMapper.toMedication(requestDto);
+        medication.setImageUrl(resolveImageUrlForCreate(requestDto, imageFile));
         return medicationMapper.toMedicationResponseDto(medicationRepository.save(medication));
     }
 
@@ -28,6 +57,7 @@ public class MedicationService implements IMedicationService {
     public List<MedicationResponseDto> getAllMedications() {
         return medicationRepository.findAll()
                 .stream()
+                .sorted((left, right) -> left.getName().compareToIgnoreCase(right.getName()))
                 .map(medicationMapper::toMedicationResponseDto)
                 .toList();
     }
@@ -39,33 +69,197 @@ public class MedicationService implements IMedicationService {
 
     @Override
     public MedicationResponseDto updateMedication(String medicationId, MedicationRequestDto requestDto) {
+        return updateAdminMedication(medicationId, requestDto, null);
+    }
+
+    @Override
+    public MedicationResponseDto updateAdminMedication(String medicationId, MedicationRequestDto requestDto, MultipartFile imageFile) {
         Medication medication = findMedicationById(medicationId);
+        String previousImageUrl = medication.getImageUrl();
+        String nextImageUrl = resolveImageUrlForUpdate(medication, requestDto, imageFile);
+
         medication.setName(requestDto.getName());
         medication.setDescription(requestDto.getDescription());
         medication.setCategory(requestDto.getCategory());
         medication.setLaboratory(requestDto.getLaboratory());
-        medication.setImageUrl(requestDto.getImageUrl());
-        return medicationMapper.toMedicationResponseDto(medicationRepository.save(medication));
+        medication.setImageUrl(nextImageUrl);
+
+        Medication savedMedication = medicationRepository.save(medication);
+
+        if (!sameImageUrl(previousImageUrl, nextImageUrl)) {
+            deleteStoredImageIfManaged(previousImageUrl, false);
+        }
+
+        return medicationMapper.toMedicationResponseDto(savedMedication);
     }
 
     @Override
     public void deleteMedication(String medicationId) {
         Medication medication = findMedicationById(medicationId);
         medicationRepository.delete(medication);
+        deleteStoredImageIfManaged(medication.getImageUrl(), false);
     }
 
     @Override
     public List<MedicationResponseDto> searchMedications(String query) {
         List<Medication> medications = query == null || query.isBlank()
                 ? medicationRepository.findAll()
-                : medicationRepository.search(query.trim());
+                : medicationRepository.search(buildRegexQuery(query));
         return medications.stream()
+                .sorted((left, right) -> left.getName().compareToIgnoreCase(right.getName()))
                 .map(medicationMapper::toMedicationResponseDto)
+                .toList();
+    }
+
+    @Override
+    public List<MedicationAutocompleteDto> autocompleteMedications(String query) {
+        if (query == null || query.isBlank()) {
+            return List.of();
+        }
+
+        return medicationRepository.autocomplete(buildRegexQuery(query), PageRequest.of(0, AUTOCOMPLETE_LIMIT))
+                .stream()
+                .map(medication -> MedicationAutocompleteDto.builder()
+                        .id(medication.getId())
+                        .name(medication.getName())
+                        .category(medication.getCategory())
+                        .build())
                 .toList();
     }
 
     private Medication findMedicationById(String medicationId) {
         return medicationRepository.findById(medicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Medication not found with id: " + medicationId));
+    }
+
+    private String resolveImageUrlForCreate(MedicationRequestDto requestDto, MultipartFile imageFile) {
+        if (imageFile != null && !imageFile.isEmpty()) {
+            return storeImage(imageFile);
+        }
+
+        return normalizeText(requestDto.getImageUrl());
+    }
+
+    private String resolveImageUrlForUpdate(Medication medication, MedicationRequestDto requestDto, MultipartFile imageFile) {
+        if (imageFile != null && !imageFile.isEmpty()) {
+            return storeImage(imageFile);
+        }
+
+        String requestedImageUrl = normalizeText(requestDto.getImageUrl());
+        if (requestedImageUrl != null) {
+            return requestedImageUrl;
+        }
+
+        return medication.getImageUrl();
+    }
+
+    private String storeImage(MultipartFile imageFile) {
+        validateImage(imageFile);
+
+        try {
+            Path storageDirectory = getStorageDirectory();
+            Files.createDirectories(storageDirectory);
+
+            String extension = resolveExtension(imageFile);
+            String fileName = UUID.randomUUID() + extension;
+            Path targetPath = storageDirectory.resolve(fileName).normalize();
+
+            try (java.io.InputStream inputStream = imageFile.getInputStream()) {
+                Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            }
+            return medicationImagePublicPath + "/" + fileName;
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to store medication image.", exception);
+        }
+    }
+
+    private void validateImage(MultipartFile imageFile) {
+        String contentType = normalizeText(imageFile.getContentType());
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            throw new IllegalArgumentException("Only image files are allowed for medication uploads.");
+        }
+    }
+
+    private String resolveExtension(MultipartFile imageFile) {
+        String originalFilename = normalizeText(imageFile.getOriginalFilename());
+        String extension = originalFilename == null ? null : StringUtils.getFilenameExtension(originalFilename);
+
+        if (extension != null && !extension.isBlank()) {
+            return "." + extension.toLowerCase(Locale.ROOT);
+        }
+
+        String contentType = normalizeText(imageFile.getContentType());
+        if ("image/png".equalsIgnoreCase(contentType)) {
+            return ".png";
+        }
+        if ("image/webp".equalsIgnoreCase(contentType)) {
+            return ".webp";
+        }
+        if ("image/gif".equalsIgnoreCase(contentType)) {
+            return ".gif";
+        }
+
+        return ".jpg";
+    }
+
+    private void deleteStoredImageIfManaged(String imageUrl, boolean failOnDeleteError) {
+        if (!isManagedImageUrl(imageUrl)) {
+            return;
+        }
+
+        String fileName = imageUrl.substring(medicationImagePublicPath.length() + 1);
+        Path imagePath = getStorageDirectory().resolve(fileName).normalize();
+        if (!imagePath.startsWith(getStorageDirectory())) {
+            if (failOnDeleteError) {
+                throw new IllegalStateException("Medication image path is outside the configured storage directory.");
+            }
+
+            log.warn("Skipped deletion for image outside medication storage directory: {}", imagePath);
+            return;
+        }
+
+        try {
+            Files.deleteIfExists(imagePath);
+        } catch (IOException exception) {
+            if (failOnDeleteError) {
+                throw new IllegalStateException("Failed to delete stored medication image.", exception);
+            }
+
+            log.warn("Failed to delete stored medication image at {}", imagePath, exception);
+        }
+    }
+
+    private boolean isManagedImageUrl(String imageUrl) {
+        String normalizedImageUrl = normalizeText(imageUrl);
+        return normalizedImageUrl != null
+                && normalizedImageUrl.startsWith(medicationImagePublicPath + "/");
+    }
+
+    private boolean sameImageUrl(String currentImageUrl, String nextImageUrl) {
+        String normalizedCurrentImageUrl = normalizeText(currentImageUrl);
+        String normalizedNextImageUrl = normalizeText(nextImageUrl);
+
+        if (normalizedCurrentImageUrl == null) {
+            return normalizedNextImageUrl == null;
+        }
+
+        return normalizedCurrentImageUrl.equals(normalizedNextImageUrl);
+    }
+
+    private Path getStorageDirectory() {
+        return Paths.get(medicationImageDirectory).toAbsolutePath().normalize();
+    }
+
+    private String buildRegexQuery(String query) {
+        return Pattern.quote(query.trim());
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String trimmedValue = value.trim();
+        return trimmedValue.isEmpty() ? null : trimmedValue;
     }
 }

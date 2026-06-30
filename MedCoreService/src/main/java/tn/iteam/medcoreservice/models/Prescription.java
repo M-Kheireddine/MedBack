@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -22,7 +23,10 @@ import java.util.List;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Document(collection = "prescriptions")
-@CompoundIndex(name = "doctor_patient_created_at_idx", def = "{'doctorId': 1, 'patientId': 1, 'createdAt': -1}")
+@CompoundIndexes({
+        @CompoundIndex(name = "doctor_created_at_idx", def = "{'doctorId': 1, 'createdAt': -1}"),
+        @CompoundIndex(name = "patient_created_at_idx", def = "{'patientId': 1, 'createdAt': -1}")
+})
 public class Prescription implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -36,6 +40,7 @@ public class Prescription implements Serializable {
     @Indexed
     private String patientId;
 
+    @Indexed
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 

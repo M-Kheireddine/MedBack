@@ -33,6 +33,7 @@ public class Medication implements Serializable {
     @Indexed
     private String category;
 
+    @Indexed
     private String laboratory;
 
     private String imageUrl;

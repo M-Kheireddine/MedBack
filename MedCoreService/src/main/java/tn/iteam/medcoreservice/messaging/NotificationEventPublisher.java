@@ -35,11 +35,16 @@ public class NotificationEventPublisher {
     }
 
     public void publishPrescriptionCreated(Prescription prescription, String recipientEmail) {
+        int medicationCount = prescription.getPrescriptionLines() == null
+                ? 0
+                : prescription.getPrescriptionLines().size();
+
         NotificationEvent event = NotificationEvent.builder()
                 .type("PRESCRIPTION_CREATED")
                 .recipientEmail(recipientEmail)
                 .subject("Prescription created")
-                .message("A new prescription has been created by doctor " + prescription.getDoctorId() + ".")
+                .message("A new prescription with " + medicationCount + " medication line(s) has been created by doctor "
+                        + prescription.getDoctorId() + " for patient " + prescription.getPatientId() + ".")
                 .build();
 
         kafkaTemplate.send(prescriptionTopic, prescription.getId(), event);

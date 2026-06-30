@@ -6,8 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import tn.iteam.medcoreservice.controllers.specs.IMedicationController;
 import tn.iteam.medcoreservice.dtos.requests.MedicationRequestDto;
+import tn.iteam.medcoreservice.dtos.responses.MedicationAutocompleteDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationResponseDto;
 import tn.iteam.medcoreservice.services.impls.IMedicationService;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -15,6 +17,32 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MedicationController implements IMedicationController {
     private final IMedicationService medicationService;
+
+    @Override
+    public ResponseEntity<MedicationResponseDto> createAdminMedication(MedicationRequestDto requestDto, MultipartFile imageFile) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(medicationService.createAdminMedication(requestDto, imageFile));
+    }
+
+    @Override
+    public ResponseEntity<List<MedicationResponseDto>> getAdminMedications() {
+        return ResponseEntity.ok(medicationService.getAllMedications());
+    }
+
+    @Override
+    public ResponseEntity<MedicationResponseDto> getAdminMedicationById(String medicationId) {
+        return ResponseEntity.ok(medicationService.getMedicationById(medicationId));
+    }
+
+    @Override
+    public ResponseEntity<MedicationResponseDto> updateAdminMedication(String medicationId, MedicationRequestDto requestDto, MultipartFile imageFile) {
+        return ResponseEntity.ok(medicationService.updateAdminMedication(medicationId, requestDto, imageFile));
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteAdminMedication(String medicationId) {
+        medicationService.deleteMedication(medicationId);
+        return ResponseEntity.noContent().build();
+    }
 
     @Override
     public ResponseEntity<MedicationResponseDto> createMedication(MedicationRequestDto requestDto) {
@@ -48,12 +76,22 @@ public class MedicationController implements IMedicationController {
     }
 
     @Override
-    public ResponseEntity<List<MedicationResponseDto>> getPublicMedications() {
-        return ResponseEntity.ok(medicationService.getAllMedications());
+    public ResponseEntity<List<MedicationResponseDto>> getPublicMedications(String search) {
+        return ResponseEntity.ok(medicationService.searchMedications(search));
+    }
+
+    @Override
+    public ResponseEntity<MedicationResponseDto> getPublicMedicationById(String medicationId) {
+        return ResponseEntity.ok(medicationService.getMedicationById(medicationId));
     }
 
     @Override
     public ResponseEntity<List<MedicationResponseDto>> searchPublicMedications(String query) {
         return ResponseEntity.ok(medicationService.searchMedications(query));
+    }
+
+    @Override
+    public ResponseEntity<List<MedicationAutocompleteDto>> autocompleteMedications(String query) {
+        return ResponseEntity.ok(medicationService.autocompleteMedications(query));
     }
 }

@@ -1,6 +1,7 @@
 package tn.iteam.medcoreservice.services.specs;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionResponseDto;
@@ -13,6 +14,7 @@ import tn.iteam.medcoreservice.services.impls.IPrescriptionService;
 
 import java.util.List;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PrescriptionService implements IPrescriptionService {
@@ -25,12 +27,14 @@ public class PrescriptionService implements IPrescriptionService {
         Prescription prescription = prescriptionMapper.toPrescription(requestDto);
         Prescription savedPrescription = prescriptionRepository.save(prescription);
         notificationEventPublisher.publishPrescriptionCreated(savedPrescription, requestDto.getRecipientEmail());
+        log.info("Prescription created with id={} for doctorId={} patientId={}",
+                savedPrescription.getId(), savedPrescription.getDoctorId(), savedPrescription.getPatientId());
         return prescriptionMapper.toPrescriptionResponseDto(savedPrescription);
     }
 
     @Override
     public List<PrescriptionResponseDto> getAllPrescriptions() {
-        return this.prescriptionRepository.findAll()
+        return this.prescriptionRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(prescriptionMapper::toPrescriptionResponseDto)
                 .toList();
@@ -61,6 +65,7 @@ public class PrescriptionService implements IPrescriptionService {
     public void deletePrescription(String prescriptionId) {
         Prescription prescription = findPrescriptionById(prescriptionId);
         prescriptionRepository.delete(prescription);
+        log.info("Prescription deleted with id={}", prescriptionId);
     }
 
     private Prescription findPrescriptionById(String prescriptionId) {
