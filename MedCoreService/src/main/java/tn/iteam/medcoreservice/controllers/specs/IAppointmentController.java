@@ -1,6 +1,7 @@
 package tn.iteam.medcoreservice.controllers.specs;
 
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -9,10 +10,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import tn.iteam.medcoreservice.dtos.requests.AppointmentRequestDto;
+import tn.iteam.medcoreservice.dtos.requests.AppointmentStatusUpdateRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.AppointmentResponseDto;
 import tn.iteam.medcoreservice.utils.ApiUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RequestMapping
@@ -27,7 +31,11 @@ public interface IAppointmentController {
     ResponseEntity<AppointmentResponseDto> getAppointmentById(@PathVariable("appointmentId") String appointmentId);
 
     @GetMapping(ApiUtils.API_GET_APPOINTMENTS_BY_DOCTOR)
-    ResponseEntity<List<AppointmentResponseDto>> getAppointmentsByDoctorId(@PathVariable("doctorId") String doctorId);
+    ResponseEntity<List<AppointmentResponseDto>> getAppointmentsByDoctorId(
+            @PathVariable("doctorId") String doctorId,
+            @RequestParam(value = "start", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,
+            @RequestParam(value = "end", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateTime
+    );
 
     @GetMapping(ApiUtils.API_GET_APPOINTMENTS_BY_PATIENT)
     ResponseEntity<List<AppointmentResponseDto>> getAppointmentsByPatientId(@PathVariable("patientId") String patientId);
@@ -36,9 +44,9 @@ public interface IAppointmentController {
     ResponseEntity<AppointmentResponseDto> updateAppointment(@PathVariable("appointmentId") String appointmentId,
                                                              @Valid @RequestBody AppointmentRequestDto requestDto);
 
-    @PatchMapping(ApiUtils.API_CANCEL_APPOINTMENT)
-    ResponseEntity<AppointmentResponseDto> cancelAppointment(@PathVariable("appointmentId") String appointmentId);
-
-    @PatchMapping(ApiUtils.API_COMPLETE_APPOINTMENT)
-    ResponseEntity<AppointmentResponseDto> completeAppointment(@PathVariable("appointmentId") String appointmentId);
+    @PatchMapping(ApiUtils.API_UPDATE_APPOINTMENT_STATUS)
+    ResponseEntity<AppointmentResponseDto> updateAppointmentStatus(
+            @PathVariable("appointmentId") String appointmentId,
+            @Valid @RequestBody AppointmentStatusUpdateRequestDto requestDto
+    );
 }

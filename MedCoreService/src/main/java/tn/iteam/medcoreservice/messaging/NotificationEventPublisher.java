@@ -26,7 +26,8 @@ public class NotificationEventPublisher {
                 .type("APPOINTMENT_CREATED")
                 .recipientEmail(recipientEmail)
                 .subject("Appointment scheduled")
-                .message("A new appointment has been scheduled for " + appointment.getDateTime() + ".")
+                .message("A new appointment has been scheduled from " + appointment.getStartDateTime()
+                        + " to " + appointment.getEndDateTime() + ".")
                 .build();
 
         kafkaTemplate.send(appointmentTopic, appointment.getId(), event);

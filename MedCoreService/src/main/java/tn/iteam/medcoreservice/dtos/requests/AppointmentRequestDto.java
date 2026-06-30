@@ -1,7 +1,8 @@
 package tn.iteam.medcoreservice.dtos.requests;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -30,12 +31,23 @@ public class AppointmentRequestDto implements Serializable {
     private String patientId;
 
     @NotNull
-    @Future
-    private LocalDateTime dateTime;
+    @FutureOrPresent
+    private LocalDateTime startDateTime;
+
+    @NotNull
+    @FutureOrPresent
+    private LocalDateTime endDateTime;
 
     @NotBlank
     private String reason;
 
     @Email
     private String recipientEmail;
+
+    @AssertTrue(message = "endDateTime must be after startDateTime")
+    public boolean isDateRangeValid() {
+        return startDateTime == null
+                || endDateTime == null
+                || endDateTime.isAfter(startDateTime);
+    }
 }

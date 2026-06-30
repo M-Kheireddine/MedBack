@@ -1,6 +1,7 @@
 package tn.iteam.medcoreservice.repositories;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 import tn.iteam.medcoreservice.models.Appointment;
 import tn.iteam.medcoreservice.models.AppointmentStatus;
@@ -10,11 +11,24 @@ import java.util.List;
 
 @Repository
 public interface AppointmentRepository extends MongoRepository<Appointment, String> {
-    List<Appointment> findByDoctorIdOrderByDateTimeAsc(String doctorId);
+    List<Appointment> findByDoctorIdOrderByStartDateTimeAsc(String doctorId);
 
-    List<Appointment> findByPatientIdOrderByDateTimeAsc(String patientId);
+    List<Appointment> findByPatientIdOrderByStartDateTimeAsc(String patientId);
 
-    List<Appointment> findByDoctorIdAndDateTimeAndStatus(String doctorId, LocalDateTime dateTime, AppointmentStatus status);
+    @Query(value = "{ 'doctorId': ?0, 'startDateTime': { $lt: ?2 }, 'endDateTime': { $gt: ?1 } }", sort = "{ 'startDateTime': 1 }")
+    List<Appointment> findDoctorAppointmentsInRange(String doctorId, LocalDateTime startDateTime, LocalDateTime endDateTime);
 
-    List<Appointment> findByPatientIdAndDateTimeAndStatus(String patientId, LocalDateTime dateTime, AppointmentStatus status);
+    List<Appointment> findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+            String doctorId,
+            AppointmentStatus status,
+            LocalDateTime endDateTime,
+            LocalDateTime startDateTime
+    );
+
+    List<Appointment> findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+            String patientId,
+            AppointmentStatus status,
+            LocalDateTime endDateTime,
+            LocalDateTime startDateTime
+    );
 }

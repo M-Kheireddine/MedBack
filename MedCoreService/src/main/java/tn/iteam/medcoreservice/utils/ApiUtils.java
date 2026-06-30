@@ -14,6 +14,7 @@ public class ApiUtils {
     public static final String API_GET_APPOINTMENTS_BY_DOCTOR = VERSION_1 + APPOINTMENT_API + "/doctor/{doctorId}";
     public static final String API_GET_APPOINTMENTS_BY_PATIENT = VERSION_1 + APPOINTMENT_API + "/patient/{patientId}";
     public static final String API_UPDATE_APPOINTMENT = VERSION_1 + APPOINTMENT_API + "/{appointmentId}";
+    public static final String API_UPDATE_APPOINTMENT_STATUS = VERSION_1 + APPOINTMENT_API + "/{appointmentId}/status";
     public static final String API_CANCEL_APPOINTMENT = VERSION_1 + APPOINTMENT_API + "/{appointmentId}/cancel";
     public static final String API_COMPLETE_APPOINTMENT = VERSION_1 + APPOINTMENT_API + "/{appointmentId}/complete";
 

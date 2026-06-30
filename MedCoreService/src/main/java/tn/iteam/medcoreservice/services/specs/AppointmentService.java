@@ -3,6 +3,7 @@ package tn.iteam.medcoreservice.services.specs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tn.iteam.medcoreservice.dtos.requests.AppointmentRequestDto;
+import tn.iteam.medcoreservice.dtos.requests.AppointmentStatusUpdateRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.AppointmentResponseDto;
 import tn.iteam.medcoreservice.exceptions.AppointmentConflictException;
 import tn.iteam.medcoreservice.exceptions.ResourceNotFoundException;
@@ -25,7 +26,13 @@ public class AppointmentService implements IAppointmentService {
 
     @Override
     public AppointmentResponseDto createAppointment(AppointmentRequestDto requestDto) {
-        validateAppointmentAvailability(null, requestDto.getDoctorId(), requestDto.getPatientId(), requestDto.getDateTime());
+        validateAppointmentAvailability(
+                null,
+                requestDto.getDoctorId(),
+                requestDto.getPatientId(),
+                requestDto.getStartDateTime(),
+                requestDto.getEndDateTime()
+        );
         Appointment appointment = appointmentMapper.toAppointment(requestDto);
         appointment.setStatus(AppointmentStatus.SCHEDULED);
         Appointment savedAppointment = appointmentRepository.save(appointment);
@@ -47,8 +54,16 @@ public class AppointmentService implements IAppointmentService {
     }
 
     @Override
+    public List<AppointmentResponseDto> getDoctorAppointmentsInRange(String doctorId, LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        return appointmentRepository.findDoctorAppointmentsInRange(doctorId, startDateTime, endDateTime)
+                .stream()
+                .map(appointmentMapper::toAppointmentResponseDto)
+                .toList();
+    }
+
+    @Override
     public List<AppointmentResponseDto> getAppointmentsByDoctorId(String doctorId) {
-        return appointmentRepository.findByDoctorIdOrderByDateTimeAsc(doctorId)
+        return appointmentRepository.findByDoctorIdOrderByStartDateTimeAsc(doctorId)
                 .stream()
                 .map(appointmentMapper::toAppointmentResponseDto)
                 .toList();
@@ -56,7 +71,7 @@ public class AppointmentService implements IAppointmentService {
 
     @Override
     public List<AppointmentResponseDto> getAppointmentsByPatientId(String patientId) {
-        return appointmentRepository.findByPatientIdOrderByDateTimeAsc(patientId)
+        return appointmentRepository.findByPatientIdOrderByStartDateTimeAsc(patientId)
                 .stream()
                 .map(appointmentMapper::toAppointmentResponseDto)
                 .toList();
@@ -65,26 +80,37 @@ public class AppointmentService implements IAppointmentService {
     @Override
     public AppointmentResponseDto updateAppointment(String appointmentId, AppointmentRequestDto requestDto) {
         Appointment appointment = findAppointmentById(appointmentId);
-        validateAppointmentAvailability(appointmentId, requestDto.getDoctorId(), requestDto.getPatientId(), requestDto.getDateTime());
+        validateAppointmentAvailability(
+                appointmentId,
+                requestDto.getDoctorId(),
+                requestDto.getPatientId(),
+                requestDto.getStartDateTime(),
+                requestDto.getEndDateTime()
+        );
         appointment.setDoctorId(requestDto.getDoctorId());
         appointment.setPatientId(requestDto.getPatientId());
-        appointment.setDateTime(requestDto.getDateTime());
+        appointment.setStartDateTime(requestDto.getStartDateTime());
+        appointment.setEndDateTime(requestDto.getEndDateTime());
         appointment.setReason(requestDto.getReason());
         Appointment savedAppointment = appointmentRepository.save(appointment);
         return appointmentMapper.toAppointmentResponseDto(savedAppointment);
     }
 
     @Override
-    public AppointmentResponseDto cancelAppointment(String appointmentId) {
+    public AppointmentResponseDto updateAppointmentStatus(String appointmentId, AppointmentStatusUpdateRequestDto requestDto) {
         Appointment appointment = findAppointmentById(appointmentId);
-        appointment.setStatus(AppointmentStatus.CANCELED);
-        return appointmentMapper.toAppointmentResponseDto(appointmentRepository.save(appointment));
-    }
 
-    @Override
-    public AppointmentResponseDto completeAppointment(String appointmentId) {
-        Appointment appointment = findAppointmentById(appointmentId);
-        appointment.setStatus(AppointmentStatus.COMPLETED);
+        if (requestDto.getStatus() == AppointmentStatus.SCHEDULED) {
+            validateAppointmentAvailability(
+                    appointmentId,
+                    appointment.getDoctorId(),
+                    appointment.getPatientId(),
+                    appointment.getStartDateTime(),
+                    appointment.getEndDateTime()
+            );
+        }
+
+        appointment.setStatus(requestDto.getStatus());
         return appointmentMapper.toAppointmentResponseDto(appointmentRepository.save(appointment));
     }
 
@@ -93,16 +119,35 @@ public class AppointmentService implements IAppointmentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + appointmentId));
     }
 
-    private void validateAppointmentAvailability(String appointmentId, String doctorId, String patientId, LocalDateTime dateTime) {
-        boolean doctorHasConflict = appointmentRepository.findByDoctorIdAndDateTimeAndStatus(doctorId, dateTime, AppointmentStatus.SCHEDULED)
+    private void validateAppointmentAvailability(
+            String appointmentId,
+            String doctorId,
+            String patientId,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    ) {
+        boolean doctorHasConflict = appointmentRepository
+                .findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                        doctorId,
+                        AppointmentStatus.SCHEDULED,
+                        endDateTime,
+                        startDateTime
+                )
                 .stream()
                 .anyMatch(appointment -> isDifferentAppointment(appointment, appointmentId));
-        boolean patientHasConflict = appointmentRepository.findByPatientIdAndDateTimeAndStatus(patientId, dateTime, AppointmentStatus.SCHEDULED)
+
+        boolean patientHasConflict = appointmentRepository
+                .findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                        patientId,
+                        AppointmentStatus.SCHEDULED,
+                        endDateTime,
+                        startDateTime
+                )
                 .stream()
                 .anyMatch(appointment -> isDifferentAppointment(appointment, appointmentId));
 
         if (doctorHasConflict || patientHasConflict) {
-            throw new AppointmentConflictException("Doctor or patient already has a scheduled appointment at this date time.");
+            throw new AppointmentConflictException("Doctor or patient already has a scheduled appointment in this time range.");
         }
     }
 

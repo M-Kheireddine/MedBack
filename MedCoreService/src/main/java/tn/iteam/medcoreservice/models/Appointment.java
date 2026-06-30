@@ -22,8 +22,8 @@ import java.time.LocalDateTime;
 @Builder(toBuilder = true)
 @Document(collection = "appointments")
 @CompoundIndexes({
-        @CompoundIndex(name = "doctor_datetime_idx", def = "{'doctorId': 1, 'dateTime': 1}"),
-        @CompoundIndex(name = "patient_datetime_idx", def = "{'patientId': 1, 'dateTime': 1}")
+        @CompoundIndex(name = "doctor_schedule_idx", def = "{'doctorId': 1, 'startDateTime': 1, 'endDateTime': 1}"),
+        @CompoundIndex(name = "patient_schedule_idx", def = "{'patientId': 1, 'startDateTime': 1, 'endDateTime': 1}")
 })
 public class Appointment implements Serializable {
     @Serial
@@ -39,7 +39,10 @@ public class Appointment implements Serializable {
     private String patientId;
 
     @Indexed
-    private LocalDateTime dateTime;
+    private LocalDateTime startDateTime;
+
+    @Indexed
+    private LocalDateTime endDateTime;
 
     @Builder.Default
     private AppointmentStatus status = AppointmentStatus.SCHEDULED;

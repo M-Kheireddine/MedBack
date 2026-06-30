@@ -16,7 +16,8 @@ public class AppointmentMapper {
         return Appointment.builder()
                 .doctorId(requestDto.getDoctorId())
                 .patientId(requestDto.getPatientId())
-                .dateTime(requestDto.getDateTime())
+                .startDateTime(requestDto.getStartDateTime())
+                .endDateTime(requestDto.getEndDateTime())
                 .status(AppointmentStatus.SCHEDULED)
                 .reason(requestDto.getReason())
                 .build();
@@ -31,7 +32,8 @@ public class AppointmentMapper {
                 .id(appointment.getId())
                 .doctorId(appointment.getDoctorId())
                 .patientId(appointment.getPatientId())
-                .dateTime(appointment.getDateTime())
+                .startDateTime(appointment.getStartDateTime())
+                .endDateTime(appointment.getEndDateTime())
                 .status(appointment.getStatus())
                 .reason(appointment.getReason())
                 .build();
