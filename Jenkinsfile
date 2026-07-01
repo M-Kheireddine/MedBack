@@ -70,15 +70,15 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Maven Test') {
             steps {
-                sh './mvnw -B -ntp clean test'
+                sh 'mvn -B -ntp -pl MedUserService,MedCoreService -am clean test'
             }
         }
 
-        stage('Build') {
+        stage('Maven Build') {
             steps {
-                sh './mvnw -B -ntp clean package -DskipTests'
+                sh 'mvn -B -ntp -pl MedUserService,MedCoreService -am clean package -DskipTests'
             }
         }
 
