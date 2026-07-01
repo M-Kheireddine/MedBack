@@ -1,0 +1,7 @@
+FROM ollama/ollama:latest
+
+COPY docker/ollama/init-ollama.sh /usr/local/bin/init-ollama.sh
+
+RUN chmod +x /usr/local/bin/init-ollama.sh
+
+ENTRYPOINT ["/usr/local/bin/init-ollama.sh"]
