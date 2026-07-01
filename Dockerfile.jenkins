@@ -21,6 +21,7 @@ RUN apt-get update \
         docker-buildx-plugin \
         docker-ce-cli \
         docker-compose-plugin \
+    && git config --system --add safe.directory /var/jenkins_home/workspace/* \
     && if ! getent group docker > /dev/null; then groupadd docker; fi \
     && usermod -aG docker jenkins \
     && apt-get clean \

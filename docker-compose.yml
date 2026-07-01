@@ -235,6 +235,7 @@ services:
       dockerfile: Dockerfile.jenkins
     container_name: med-jenkins
     restart: unless-stopped
+    user: "0:0"
     ports:
       - "8090:8080"
       - "50000:50000"
