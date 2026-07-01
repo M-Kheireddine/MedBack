@@ -6,11 +6,13 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
   ai:
-    openai:
-      api-key: ${OPENAI_API_KEY:${SPRING_AI_OPENAI_API_KEY:}}
+    model:
+      chat: ollama
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
-        model: ${OPENAI_CHAT_MODEL:gpt-5-mini}
-        temperature: ${OPENAI_CHAT_TEMPERATURE:0.2}
+        model: ${OLLAMA_CHAT_MODEL:llama3}
+        temperature: ${OLLAMA_CHAT_TEMPERATURE:0.4}
 
 server:
   port: ${MED_CHATBOT_SERVICE_PORT:8084}
@@ -42,8 +44,6 @@ logging:
 medback:
   chatbot:
     system-prompt: >
-      You are an Expert Medical Assistant for the MedBack platform. Provide clear,
-      cautious, evidence-informed medical guidance for doctors and patients. Do not
-      claim to replace a licensed physician, do not provide definitive diagnosis,
-      and recommend urgent medical care for emergency symptoms. Keep answers concise,
-      professional, and in the same language as the user's message when possible.
+      You are an expert medical AI assistant helping a doctor. Provide concise,
+      professional, and accurate medical insights based strictly on the provided
+      symptoms.

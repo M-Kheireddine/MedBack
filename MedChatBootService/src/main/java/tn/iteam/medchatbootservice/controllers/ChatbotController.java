@@ -13,8 +13,8 @@ import tn.iteam.medchatbootservice.services.ChatbotService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/v1/chat")
-public class ChatController {
+@RequestMapping({"/chat", "/v1/chat"})
+public class ChatbotController {
     private final ChatbotService chatbotService;
 
     @PostMapping
