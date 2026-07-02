@@ -6,8 +6,10 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import tn.iteam.medcoreservice.dtos.responses.PrescriptionDto;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionResponseDto;
 import tn.iteam.medcoreservice.utils.ApiUtils;
@@ -25,11 +27,18 @@ public interface IPrescriptionController {
     @GetMapping(ApiUtils.API_GET_PRESCRIPTION_BY_ID)
     ResponseEntity<PrescriptionResponseDto> getPrescriptionById(@PathVariable("prescriptionId") String prescriptionId);
 
+    @GetMapping(ApiUtils.API_GET_PRESCRIPTION_DETAILS)
+    ResponseEntity<PrescriptionDto> getPrescriptionDetails(@PathVariable("prescriptionId") String prescriptionId);
+
     @GetMapping(ApiUtils.API_GET_PRESCRIPTIONS_BY_DOCTOR)
     ResponseEntity<List<PrescriptionResponseDto>> getPrescriptionsByDoctorId(@PathVariable("doctorId") String doctorId);
 
     @GetMapping(ApiUtils.API_GET_PRESCRIPTIONS_BY_PATIENT)
     ResponseEntity<List<PrescriptionResponseDto>> getPrescriptionsByPatientId(@PathVariable("patientId") String patientId);
+
+    @PutMapping(ApiUtils.API_UPDATE_PRESCRIPTION)
+    ResponseEntity<PrescriptionDto> updatePrescription(@PathVariable("prescriptionId") String prescriptionId,
+                                                       @Valid @RequestBody PrescriptionRequestDto requestDto);
 
     @DeleteMapping(ApiUtils.API_DELETE_PRESCRIPTION)
     ResponseEntity<Void> deletePrescription(@PathVariable("prescriptionId") String prescriptionId);

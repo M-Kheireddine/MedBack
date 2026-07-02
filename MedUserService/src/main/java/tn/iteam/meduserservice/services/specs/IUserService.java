@@ -1,7 +1,9 @@
 package tn.iteam.meduserservice.services.specs;
 
 import tn.iteam.meduserservice.dtos.requests.DoctorRequestDto;
+import tn.iteam.meduserservice.dtos.responses.DoctorDto;
 import tn.iteam.meduserservice.dtos.responses.DoctorResponseDto;
+import tn.iteam.meduserservice.dtos.responses.PatientDto;
 import tn.iteam.meduserservice.dtos.responses.PatientResponseDto;
 import tn.iteam.meduserservice.dtos.responses.UserResponseDto;
 
@@ -22,9 +24,21 @@ public interface IUserService {
 
     void deleteDoctor(String doctorId);
 
+    List<DoctorDto> searchPublicDoctors(String search, String specialty);
+
+    DoctorDto getDoctorProfile(String doctorId);
+
+    DoctorDto getDoctorSummary(String doctorId);
+
     List<PatientResponseDto> getAllPatients();
 
     PatientResponseDto getPatientById(String patientId);
 
     PatientResponseDto archivePatient(String patientId);
+
+    PatientDto getPatientProfile(String patientId);
+
+    PatientDto getPatientSummary(String patientId);
+
+    PatientDto unarchivePatient(String patientId);
 }

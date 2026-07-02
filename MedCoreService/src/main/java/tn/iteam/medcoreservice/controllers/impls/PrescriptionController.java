@@ -5,7 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import tn.iteam.medcoreservice.controllers.specs.IPrescriptionController;
+import tn.iteam.medcoreservice.dtos.responses.PrescriptionDto;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionRequestDto;
+import tn.iteam.medcoreservice.mappers.PrescriptionDtoMapper;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionResponseDto;
 import tn.iteam.medcoreservice.services.impls.IPrescriptionService;
 
@@ -32,6 +34,11 @@ public class PrescriptionController implements IPrescriptionController {
     }
 
     @Override
+    public ResponseEntity<PrescriptionDto> getPrescriptionDetails(String prescriptionId) {
+        return ResponseEntity.ok(prescriptionService.getPrescriptionDetails(prescriptionId));
+    }
+
+    @Override
     public ResponseEntity<List<PrescriptionResponseDto>> getPrescriptionsByDoctorId(String doctorId) {
         return ResponseEntity.ok(prescriptionService.getPrescriptionsByDoctorId(doctorId));
     }
@@ -39,6 +46,11 @@ public class PrescriptionController implements IPrescriptionController {
     @Override
     public ResponseEntity<List<PrescriptionResponseDto>> getPrescriptionsByPatientId(String patientId) {
         return ResponseEntity.ok(prescriptionService.getPrescriptionsByPatientId(patientId));
+    }
+
+    @Override
+    public ResponseEntity<PrescriptionDto> updatePrescription(String prescriptionId, PrescriptionRequestDto requestDto) {
+        return ResponseEntity.ok(prescriptionService.updatePrescription(prescriptionId, requestDto));
     }
 
     @Override

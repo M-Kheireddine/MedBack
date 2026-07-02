@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import tn.iteam.medcoreservice.dtos.requests.MedicationRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationAutocompleteDto;
+import tn.iteam.medcoreservice.dtos.responses.MedicationDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationResponseDto;
 import tn.iteam.medcoreservice.utils.ApiUtils;
 
@@ -70,6 +71,12 @@ public interface IMedicationController {
 
     @GetMapping(ApiUtils.API_PUBLIC_SEARCH_MEDICATIONS)
     ResponseEntity<List<MedicationResponseDto>> searchPublicMedications(@RequestParam(value = "query", required = false) String query);
+
+    @GetMapping(ApiUtils.API_PUBLIC_GET_MEDICATION_CATALOG)
+    ResponseEntity<List<MedicationDto>> getMedicationCatalog(@RequestParam(value = "search", required = false) String search);
+
+    @GetMapping(ApiUtils.API_PUBLIC_GET_MEDICATION_CATALOG_BY_ID)
+    ResponseEntity<MedicationDto> getMedicationCatalogById(@PathVariable("medicationId") String medicationId);
 
     @GetMapping(ApiUtils.API_MEDICATION_AUTOCOMPLETE)
     ResponseEntity<List<MedicationAutocompleteDto>> autocompleteMedications(@RequestParam("query") String query);

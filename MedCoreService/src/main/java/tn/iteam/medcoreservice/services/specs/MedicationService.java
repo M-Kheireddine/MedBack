@@ -9,8 +9,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import tn.iteam.medcoreservice.dtos.requests.MedicationRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationAutocompleteDto;
+import tn.iteam.medcoreservice.dtos.responses.MedicationDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationResponseDto;
 import tn.iteam.medcoreservice.exceptions.ResourceNotFoundException;
+import tn.iteam.medcoreservice.mappers.MedicationDtoMapper;
 import tn.iteam.medcoreservice.mappers.MedicationMapper;
 import tn.iteam.medcoreservice.models.Medication;
 import tn.iteam.medcoreservice.repositories.MedicationRepository;
@@ -40,6 +42,7 @@ public class MedicationService implements IMedicationService {
 
     private final MedicationRepository medicationRepository;
     private final MedicationMapper medicationMapper;
+    private final MedicationDtoMapper medicationDtoMapper;
 
     @Override
     public MedicationResponseDto createMedication(MedicationRequestDto requestDto) {
@@ -109,6 +112,18 @@ public class MedicationService implements IMedicationService {
                 .sorted((left, right) -> left.getName().compareToIgnoreCase(right.getName()))
                 .map(medicationMapper::toMedicationResponseDto)
                 .toList();
+    }
+
+    @Override
+    public List<MedicationDto> getMedicationCatalog(String search) {
+        return searchMedications(search).stream()
+                .map(medicationDtoMapper::toMedicationDto)
+                .toList();
+    }
+
+    @Override
+    public MedicationDto getMedicationCatalogById(String medicationId) {
+        return medicationDtoMapper.toMedicationDto(getMedicationById(medicationId));
     }
 
     @Override

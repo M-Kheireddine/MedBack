@@ -3,6 +3,7 @@ package tn.iteam.medcoreservice.services.impls;
 import org.springframework.web.multipart.MultipartFile;
 import tn.iteam.medcoreservice.dtos.requests.MedicationRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationAutocompleteDto;
+import tn.iteam.medcoreservice.dtos.responses.MedicationDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationResponseDto;
 
 import java.util.List;
@@ -23,6 +24,10 @@ public interface IMedicationService {
     void deleteMedication(String medicationId);
 
     List<MedicationResponseDto> searchMedications(String query);
+
+    List<MedicationDto> getMedicationCatalog(String search);
+
+    MedicationDto getMedicationCatalogById(String medicationId);
 
     List<MedicationAutocompleteDto> autocompleteMedications(String query);
 }

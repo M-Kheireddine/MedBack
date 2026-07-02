@@ -19,8 +19,8 @@ spring:
           globalcors:
             cors-configurations:
               '[/**]':
-                allowedOrigins:
-                  - ${FRONTEND_ORIGIN:http://localhost:4200}
+                allowedOriginPatterns:
+                  - ${FRONTEND_ORIGIN_PATTERN:http://localhost:*}
                 allowedMethods:
                   - GET
                   - POST
@@ -35,19 +35,19 @@ spring:
             - id: med-user-service
               uri: lb://med-user-service
               predicates:
-                - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/admin/doctors/**,/api/v1/admin/patients/**
+                - Path=/api/v1/auth/**,/api/v1/users,/api/v1/users/**,/api/v1/admin/doctors,/api/v1/admin/doctors/**,/api/v1/admin/patients,/api/v1/admin/patients/**,/api/v1/public/doctors,/api/v1/public/doctors/**
             - id: med-core-service
               uri: lb://med-core-service
               predicates:
-                - Path=/api/v1/admin/medications/**,/api/v1/medications/**,/api/v1/public/medications/**,/api/v1/appointments/**,/api/v1/prescriptions/**,/api/uploads/medications/**
+                - Path=/api/v1/admin/medications,/api/v1/admin/medications/**,/api/v1/medications,/api/v1/medications/**,/api/v1/public/medications,/api/v1/public/medications/**,/api/v1/appointments,/api/v1/appointments/**,/api/v1/prescriptions,/api/v1/prescriptions/**,/api/uploads/medications/**
             - id: med-chatboot-service
               uri: lb://med-chatboot-service
               predicates:
-                - Path=/api/v1/chat/**
+                - Path=/api/chat,/api/chat/**,/api/v1/chat,/api/v1/chat/**
             - id: med-notification-service
               uri: lb://med-notification-service
               predicates:
-                - Path=/api/v1/notifications/**
+                - Path=/api/v1/notifications,/api/v1/notifications/**
 
 eureka:
   client:

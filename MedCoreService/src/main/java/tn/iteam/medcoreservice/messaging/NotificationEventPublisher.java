@@ -50,4 +50,21 @@ public class NotificationEventPublisher {
         kafkaTemplate.send(prescriptionTopic, prescription.getId(), event);
         log.info("Prescription event published for prescriptionId={}", prescription.getId());
     }
+
+    public void publishPrescriptionUpdated(Prescription prescription, String recipientEmail) {
+        int medicationCount = prescription.getPrescriptionLines() == null
+                ? 0
+                : prescription.getPrescriptionLines().size();
+
+        NotificationEvent event = NotificationEvent.builder()
+                .type("PRESCRIPTION_UPDATED")
+                .recipientEmail(recipientEmail)
+                .subject("Prescription updated")
+                .message("Prescription " + prescription.getId() + " has been updated with " + medicationCount
+                        + " medication line(s) for patient " + prescription.getPatientId() + ".")
+                .build();
+
+        kafkaTemplate.send(prescriptionTopic, prescription.getId(), event);
+        log.info("Prescription update event published for prescriptionId={}", prescription.getId());
+    }
 }

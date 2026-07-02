@@ -4,12 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import tn.iteam.meduserservice.dtos.requests.DoctorRequestDto;
+import tn.iteam.meduserservice.dtos.responses.DoctorDto;
 import tn.iteam.meduserservice.dtos.responses.DoctorResponseDto;
+import tn.iteam.meduserservice.dtos.responses.PatientDto;
 import tn.iteam.meduserservice.dtos.responses.PatientResponseDto;
 import tn.iteam.meduserservice.dtos.responses.UserResponseDto;
 import tn.iteam.meduserservice.exceptions.BusinessRuleException;
 import tn.iteam.meduserservice.exceptions.DuplicateResourceException;
 import tn.iteam.meduserservice.exceptions.ResourceNotFoundException;
+import tn.iteam.meduserservice.mappers.DoctorDtoMapper;
+import tn.iteam.meduserservice.mappers.PatientDtoMapper;
 import tn.iteam.meduserservice.mappers.UserMapper;
 import tn.iteam.meduserservice.models.DoctorEntity;
 import tn.iteam.meduserservice.models.PatientEntity;
@@ -21,6 +25,7 @@ import tn.iteam.meduserservice.repositories.UserRepository;
 import tn.iteam.meduserservice.services.specs.IUserService;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -30,6 +35,8 @@ public class UserService implements IUserService {
     private final DoctorRepository doctorRepository;
     private final PatientRepository patientRepository;
     private final UserMapper userMapper;
+    private final DoctorDtoMapper doctorDtoMapper;
+    private final PatientDtoMapper patientDtoMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -112,6 +119,28 @@ public class UserService implements IUserService {
     }
 
     @Override
+    public List<DoctorDto> searchPublicDoctors(String search, String specialty) {
+        return doctorRepository.findAll()
+                .stream()
+                .filter(doctor -> Boolean.TRUE.equals(doctor.getIsActive()))
+                .filter(doctor -> matchesSearch(doctor, search))
+                .filter(doctor -> matchesSpecialty(doctor, specialty))
+                .map(userMapper::toDoctorResponseDto)
+                .map(doctorDtoMapper::toDoctorDto)
+                .toList();
+    }
+
+    @Override
+    public DoctorDto getDoctorProfile(String doctorId) {
+        return doctorDtoMapper.toDoctorDto(userMapper.toDoctorResponseDto(findDoctorById(doctorId)));
+    }
+
+    @Override
+    public DoctorDto getDoctorSummary(String doctorId) {
+        return doctorDtoMapper.toDoctorDto(userMapper.toDoctorResponseDto(findDoctorById(doctorId)));
+    }
+
+    @Override
     public List<PatientResponseDto> getAllPatients() {
         return patientRepository.findAll()
                 .stream()
@@ -129,6 +158,23 @@ public class UserService implements IUserService {
         PatientEntity patient = findPatientById(patientId);
         patient.setIsActive(Boolean.FALSE);
         return userMapper.toPatientResponseDto(patientRepository.save(patient));
+    }
+
+    @Override
+    public PatientDto getPatientProfile(String patientId) {
+        return patientDtoMapper.toPatientDto(userMapper.toPatientResponseDto(findPatientById(patientId)));
+    }
+
+    @Override
+    public PatientDto getPatientSummary(String patientId) {
+        return patientDtoMapper.toPatientDto(userMapper.toPatientResponseDto(findPatientById(patientId)));
+    }
+
+    @Override
+    public PatientDto unarchivePatient(String patientId) {
+        PatientEntity patient = findPatientById(patientId);
+        patient.setIsActive(Boolean.TRUE);
+        return patientDtoMapper.toPatientDto(userMapper.toPatientResponseDto(patientRepository.save(patient)));
     }
 
     private UserEntity findUserById(String userId) {
@@ -152,5 +198,30 @@ public class UserService implements IUserService {
                 .ifPresent(user -> {
                     throw new DuplicateResourceException("A user with this email already exists.");
                 });
+    }
+
+    private boolean matchesSearch(DoctorEntity doctor, String search) {
+        if (search == null || search.isBlank()) {
+            return true;
+        }
+
+        String normalizedSearch = search.trim().toLowerCase(Locale.ROOT);
+        return containsValue(doctor.getFirstName(), normalizedSearch)
+                || containsValue(doctor.getLastName(), normalizedSearch)
+                || containsValue(doctor.getSpecialty(), normalizedSearch)
+                || containsValue(doctor.getClinicAddress(), normalizedSearch);
+    }
+
+    private boolean matchesSpecialty(DoctorEntity doctor, String specialty) {
+        if (specialty == null || specialty.isBlank()) {
+            return true;
+        }
+
+        return doctor.getSpecialty() != null
+                && doctor.getSpecialty().trim().equalsIgnoreCase(specialty.trim());
+    }
+
+    private boolean containsValue(String value, String normalizedSearch) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedSearch);
     }
 }

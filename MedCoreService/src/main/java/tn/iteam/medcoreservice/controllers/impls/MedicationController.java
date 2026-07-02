@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tn.iteam.medcoreservice.controllers.specs.IMedicationController;
 import tn.iteam.medcoreservice.dtos.requests.MedicationRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationAutocompleteDto;
+import tn.iteam.medcoreservice.dtos.responses.MedicationDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationResponseDto;
 import tn.iteam.medcoreservice.services.impls.IMedicationService;
 import org.springframework.web.multipart.MultipartFile;
@@ -97,6 +98,16 @@ public class MedicationController implements IMedicationController {
     @Override
     public ResponseEntity<List<MedicationResponseDto>> searchPublicMedications(String query) {
         return ResponseEntity.ok(medicationService.searchMedications(query));
+    }
+
+    @Override
+    public ResponseEntity<List<MedicationDto>> getMedicationCatalog(String search) {
+        return ResponseEntity.ok(medicationService.getMedicationCatalog(search));
+    }
+
+    @Override
+    public ResponseEntity<MedicationDto> getMedicationCatalogById(String medicationId) {
+        return ResponseEntity.ok(medicationService.getMedicationCatalogById(medicationId));
     }
 
     @Override

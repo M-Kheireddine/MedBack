@@ -33,12 +33,16 @@ public class ApiUtils {
     public static final String API_PUBLIC_GET_ALL_MEDICATIONS = VERSION_1 + PUBLIC_API + MEDICATION_API;
     public static final String API_PUBLIC_GET_MEDICATION_BY_ID = VERSION_1 + PUBLIC_API + MEDICATION_API + "/{medicationId}";
     public static final String API_PUBLIC_SEARCH_MEDICATIONS = VERSION_1 + PUBLIC_API + MEDICATION_API + "/search";
+    public static final String API_PUBLIC_GET_MEDICATION_CATALOG = VERSION_1 + PUBLIC_API + MEDICATION_API + "/catalog";
+    public static final String API_PUBLIC_GET_MEDICATION_CATALOG_BY_ID = VERSION_1 + PUBLIC_API + MEDICATION_API + "/catalog/{medicationId}";
     public static final String API_MEDICATION_AUTOCOMPLETE = VERSION_1 + MEDICATION_API + "/autocomplete";
 
     public static final String API_CREATE_PRESCRIPTION = VERSION_1 + PRESCRIPTION_API;
     public static final String API_GET_ALL_PRESCRIPTIONS = VERSION_1 + PRESCRIPTION_API;
     public static final String API_GET_PRESCRIPTION_BY_ID = VERSION_1 + PRESCRIPTION_API + "/{prescriptionId}";
+    public static final String API_GET_PRESCRIPTION_DETAILS = VERSION_1 + PRESCRIPTION_API + "/{prescriptionId}/details";
     public static final String API_GET_PRESCRIPTIONS_BY_DOCTOR = VERSION_1 + PRESCRIPTION_API + "/doctor/{doctorId}";
     public static final String API_GET_PRESCRIPTIONS_BY_PATIENT = VERSION_1 + PRESCRIPTION_API + "/patient/{patientId}";
+    public static final String API_UPDATE_PRESCRIPTION = VERSION_1 + PRESCRIPTION_API + "/{prescriptionId}";
     public static final String API_DELETE_PRESCRIPTION = VERSION_1 + PRESCRIPTION_API + "/{prescriptionId}";
 }
