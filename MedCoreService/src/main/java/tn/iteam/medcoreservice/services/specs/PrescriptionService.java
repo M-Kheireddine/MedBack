@@ -49,20 +49,20 @@ public class PrescriptionService implements IPrescriptionService {
         notificationEventPublisher.publishPrescriptionCreated(savedPrescription, requestDto.getRecipientEmail());
         log.info("Prescription created with id={} for doctorId={} patientId={}",
                 savedPrescription.getId(), savedPrescription.getDoctorId(), savedPrescription.getPatientId());
-        return prescriptionMapper.toPrescriptionResponseDto(savedPrescription);
+        return toPrescriptionResponseDto(savedPrescription);
     }
 
     @Override
     public List<PrescriptionResponseDto> getAllPrescriptions() {
         return this.prescriptionRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(prescriptionMapper::toPrescriptionResponseDto)
+                .map(this::toPrescriptionResponseDto)
                 .toList();
     }
 
     @Override
     public PrescriptionResponseDto getPrescriptionById(String prescriptionId) {
-        return prescriptionMapper.toPrescriptionResponseDto(findPrescriptionById(prescriptionId));
+        return toPrescriptionResponseDto(findPrescriptionById(prescriptionId));
     }
 
     @Override
@@ -74,7 +74,7 @@ public class PrescriptionService implements IPrescriptionService {
     public List<PrescriptionResponseDto> getPrescriptionsByDoctorId(String doctorId) {
         return prescriptionRepository.findByDoctorIdOrderByCreatedAtDesc(doctorId)
                 .stream()
-                .map(prescriptionMapper::toPrescriptionResponseDto)
+                .map(this::toPrescriptionResponseDto)
                 .toList();
     }
 
@@ -84,7 +84,7 @@ public class PrescriptionService implements IPrescriptionService {
                         patientIdentifierResolver.resolveCandidatePatientIds(patientId)
                 )
                 .stream()
-                .map(prescriptionMapper::toPrescriptionResponseDto)
+                .map(this::toPrescriptionResponseDto)
                 .toList();
     }
 
@@ -122,9 +122,7 @@ public class PrescriptionService implements IPrescriptionService {
     }
 
     private PrescriptionDto toPrescriptionDto(Prescription prescription) {
-        Map<String, Medication> medicationById = medicationRepository.findAllById(resolveMedicationIds(prescription.getPrescriptionLines()))
-                .stream()
-                .collect(java.util.stream.Collectors.toMap(Medication::getId, Function.identity()));
+        Map<String, Medication> medicationById = resolveMedicationById(prescription);
 
         return PrescriptionDto.builder()
                 .id(prescription.getId())
@@ -136,6 +134,27 @@ public class PrescriptionService implements IPrescriptionService {
                 .patient(resolvePatientMetadata(prescription.getPatientId()).orElse(null))
                 .prescriptionLines(toPrescriptionLineDtos(prescription.getPrescriptionLines(), medicationById))
                 .build();
+    }
+
+    private PrescriptionResponseDto toPrescriptionResponseDto(Prescription prescription) {
+        Map<String, Medication> medicationById = resolveMedicationById(prescription);
+
+        return PrescriptionResponseDto.builder()
+                .id(prescription.getId())
+                .doctorId(prescription.getDoctorId())
+                .patientId(prescription.getPatientId())
+                .createdAt(prescription.getCreatedAt())
+                .doctorNotes(prescription.getDoctorNotes())
+                .doctor(resolveDoctorMetadata(prescription.getDoctorId()).orElse(null))
+                .patient(resolvePatientMetadata(prescription.getPatientId()).orElse(null))
+                .prescriptionLines(toPrescriptionLineDtos(prescription.getPrescriptionLines(), medicationById))
+                .build();
+    }
+
+    private Map<String, Medication> resolveMedicationById(Prescription prescription) {
+        return medicationRepository.findAllById(resolveMedicationIds(prescription.getPrescriptionLines()))
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(Medication::getId, Function.identity()));
     }
 
     private List<String> resolveMedicationIds(List<PrescriptionLine> prescriptionLines) {

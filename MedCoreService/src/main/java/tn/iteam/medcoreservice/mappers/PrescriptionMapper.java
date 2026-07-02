@@ -3,6 +3,7 @@ package tn.iteam.medcoreservice.mappers;
 import org.springframework.stereotype.Component;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionLineRequestDto;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionRequestDto;
+import tn.iteam.medcoreservice.dtos.responses.PrescriptionLineDto;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionResponseDto;
 import tn.iteam.medcoreservice.models.Prescription;
 import tn.iteam.medcoreservice.models.PrescriptionLine;
@@ -63,14 +64,15 @@ public class PrescriptionMapper {
                 .toList();
     }
 
-    private List<PrescriptionLine> copyPrescriptionLines(List<PrescriptionLine> prescriptionLines) {
+    private List<PrescriptionLineDto> copyPrescriptionLines(List<PrescriptionLine> prescriptionLines) {
         if (prescriptionLines == null) {
             return List.of();
         }
 
         return prescriptionLines.stream()
-                .map(prescriptionLine -> PrescriptionLine.builder()
+                .map(prescriptionLine -> PrescriptionLineDto.builder()
                         .medicationId(prescriptionLine.getMedicationId())
+                        .medicationName(null)
                         .dosage(prescriptionLine.getDosage())
                         .duration(prescriptionLine.getDuration())
                         .build())

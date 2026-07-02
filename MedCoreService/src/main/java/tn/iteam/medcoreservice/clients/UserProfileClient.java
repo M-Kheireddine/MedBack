@@ -16,19 +16,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserProfileClient {
     private static final String USER_SERVICE_ID = "med-user-service";
+    private static final String INTERNAL_DOCTOR_PROFILE_URI = "/api/v1/internal/doctors/{doctorId}/profile";
+    private static final String INTERNAL_PATIENT_PROFILE_URI = "/api/v1/internal/patients/{patientId}/profile";
 
     private final DiscoveryClient discoveryClient;
 
     public InternalDoctorProfileDto getDoctorProfile(String doctorId) {
         return buildRestClient().get()
-                .uri("/v1/internal/doctors/{doctorId}/profile", doctorId)
+                .uri(INTERNAL_DOCTOR_PROFILE_URI, doctorId)
                 .retrieve()
                 .body(InternalDoctorProfileDto.class);
     }
 
     public InternalPatientProfileDto getPatientProfile(String patientId) {
         return buildRestClient().get()
-                .uri("/v1/internal/patients/{patientId}/profile", patientId)
+                .uri(INTERNAL_PATIENT_PROFILE_URI, patientId)
                 .retrieve()
                 .body(InternalPatientProfileDto.class);
     }

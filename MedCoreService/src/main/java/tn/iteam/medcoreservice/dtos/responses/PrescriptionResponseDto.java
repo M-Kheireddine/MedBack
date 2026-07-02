@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import tn.iteam.medcoreservice.models.PrescriptionLine;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -26,5 +24,7 @@ public class PrescriptionResponseDto implements Serializable {
     private String patientId;
     private LocalDateTime createdAt;
     private String doctorNotes;
-    private List<PrescriptionLine> prescriptionLines;
+    private List<PrescriptionLineDto> prescriptionLines;
+    private PrescriptionDoctorMetadataDto doctor;
+    private PrescriptionPatientMetadataDto patient;
 }
