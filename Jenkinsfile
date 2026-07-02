@@ -91,9 +91,11 @@ pipeline {
                 ]) {
                     sh '''
                         mvn -B -ntp -pl MedUserService,MedCoreService -am \
-                          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                          org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
                           -DskipTests \
-                          -Dsonar.token=$SONAR_TOKEN
+                          -Dsonar.token=$SONAR_TOKEN \
+                          -Dsonar.qualitygate.wait=true \
+                          -Dsonar.qualitygate.timeout=300
                     '''
                 }
             }
@@ -101,7 +103,7 @@ pipeline {
 
         stage('Maven Build') {
             steps {
-                sh 'mvn -B -ntp -pl MedUserService,MedCoreService -am clean package -DskipTests'
+                sh 'mvn -B -ntp -pl MedUserService,MedCoreService -am package -DskipTests'
             }
         }
 

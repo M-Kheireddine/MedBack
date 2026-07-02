@@ -6,14 +6,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import tn.iteam.meduserservice.dtos.requests.AuthRequestDto;
+import tn.iteam.meduserservice.dtos.requests.AdminRegistrationRequestDto;
 import tn.iteam.meduserservice.dtos.requests.PatientRegistrationRequestDto;
 import tn.iteam.meduserservice.dtos.responses.AuthResponseDto;
 import tn.iteam.meduserservice.dtos.responses.PatientResponseDto;
+import tn.iteam.meduserservice.dtos.responses.UserResponseDto;
+import tn.iteam.meduserservice.exceptions.DuplicateResourceException;
+import tn.iteam.meduserservice.exceptions.ResourceNotFoundException;
 import tn.iteam.meduserservice.mappers.UserMapper;
 import tn.iteam.meduserservice.models.PatientEntity;
 import tn.iteam.meduserservice.models.Role;
@@ -23,12 +30,15 @@ import tn.iteam.meduserservice.repositories.UserRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,6 +67,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
         authService = new AuthService(
                 userRepository,
                 patientRepository,
@@ -116,6 +127,44 @@ class AuthServiceTest {
     }
 
     @Test
+    void registerPatientShouldThrowWhenEmailAlreadyExists() {
+        PatientRegistrationRequestDto requestDto = PatientRegistrationRequestDto.builder()
+                .firstName("Ariel")
+                .lastName("Richardson")
+                .email("ariel.richardson@medback.com")
+                .password("Pa$$w0rd!")
+                .birthDate(LocalDate.of(1992, 7, 15))
+                .socialSecurityNumber("461")
+                .bloodType("B-")
+                .build();
+
+        when(userRepository.findByEmail(requestDto.getEmail()))
+                .thenReturn(Optional.of(UserEntity.builder().id(UUID.randomUUID()).email(requestDto.getEmail()).build()));
+
+        assertThrows(DuplicateResourceException.class, () -> authService.registerPatient(requestDto));
+        verify(patientRepository, never()).save(any());
+    }
+
+    @Test
+    void registerPatientShouldThrowWhenSocialSecurityNumberAlreadyExists() {
+        PatientRegistrationRequestDto requestDto = PatientRegistrationRequestDto.builder()
+                .firstName("Ariel")
+                .lastName("Richardson")
+                .email("ariel.richardson@medback.com")
+                .password("Pa$$w0rd!")
+                .birthDate(LocalDate.of(1992, 7, 15))
+                .socialSecurityNumber("461")
+                .bloodType("B-")
+                .build();
+
+        when(userRepository.findByEmail(requestDto.getEmail())).thenReturn(Optional.empty());
+        when(patientRepository.existsBySocialSecurityNumber(requestDto.getSocialSecurityNumber())).thenReturn(true);
+
+        assertThrows(DuplicateResourceException.class, () -> authService.registerPatient(requestDto));
+        verify(patientRepository, never()).save(any());
+    }
+
+    @Test
     void loginShouldAuthenticateAndReturnJwtPayload() {
         AuthRequestDto requestDto = AuthRequestDto.builder()
                 .email("doctor@medback.com")
@@ -152,5 +201,97 @@ class AuthServiceTest {
         assertEquals("Nina", response.getUser().getFirstName());
         assertEquals(Role.DOCTOR, response.getUser().getRole());
         assertTrue(response.getUser().getIsActive());
+    }
+
+    @Test
+    void loginShouldThrowWhenAuthenticatedUserCannotBeFound() {
+        AuthRequestDto requestDto = AuthRequestDto.builder()
+                .email("missing@medback.com")
+                .password("SecurePass123")
+                .build();
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authentication);
+        when(userRepository.findByEmail(requestDto.getEmail())).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> authService.login(requestDto)
+        );
+
+        assertEquals("User not found with email: missing@medback.com", exception.getMessage());
+    }
+
+    @Test
+    void registerAdminShouldAllowBootstrapWhenNoAdminExists() {
+        AdminRegistrationRequestDto requestDto = AdminRegistrationRequestDto.builder()
+                .firstName("System")
+                .lastName("Admin")
+                .email("admin@medback.com")
+                .password("AdminPass123")
+                .build();
+        UUID adminId = UUID.randomUUID();
+
+        when(userRepository.findByEmail(requestDto.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(0L);
+        when(passwordEncoder.encode(requestDto.getPassword())).thenReturn("encoded-admin");
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> {
+            UserEntity user = invocation.getArgument(0);
+            user.setId(adminId);
+            return user;
+        });
+
+        UserResponseDto response = authService.registerAdmin(requestDto);
+
+        assertEquals(adminId, response.getId());
+        assertEquals(Role.ADMIN, response.getRole());
+        assertEquals("admin@medback.com", response.getEmail());
+    }
+
+    @Test
+    void registerAdminShouldThrowWhenAdminAlreadyExistsAndCurrentUserIsNotAdmin() {
+        AdminRegistrationRequestDto requestDto = AdminRegistrationRequestDto.builder()
+                .firstName("System")
+                .lastName("Admin")
+                .email("admin@medback.com")
+                .password("AdminPass123")
+                .build();
+
+        when(userRepository.findByEmail(requestDto.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> authService.registerAdmin(requestDto)
+        );
+
+        assertEquals("Admin registration is only allowed for an authenticated admin after bootstrap.", exception.getMessage());
+    }
+
+    @Test
+    void registerAdminShouldAllowWhenCurrentUserHasAdminRole() {
+        AdminRegistrationRequestDto requestDto = AdminRegistrationRequestDto.builder()
+                .firstName("Second")
+                .lastName("Admin")
+                .email("admin2@medback.com")
+                .password("AdminPass123")
+                .build();
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        "admin@medback.com",
+                        "ignored",
+                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                )
+        );
+
+        when(userRepository.findByEmail(requestDto.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+        when(passwordEncoder.encode(requestDto.getPassword())).thenReturn("encoded-admin-2");
+        when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponseDto response = authService.registerAdmin(requestDto);
+
+        assertEquals(Role.ADMIN, response.getRole());
+        assertEquals("admin2@medback.com", response.getEmail());
     }
 }
