@@ -13,6 +13,7 @@ import tn.iteam.meduserservice.dtos.requests.DoctorRequestDto;
 import tn.iteam.meduserservice.dtos.responses.DoctorResponseDto;
 import tn.iteam.meduserservice.exceptions.GlobalExceptionHandler;
 import tn.iteam.meduserservice.exceptions.ResourceNotFoundException;
+import tn.iteam.meduserservice.filters.JwtAuthenticationFilter;
 import tn.iteam.meduserservice.models.Role;
 import tn.iteam.meduserservice.services.specs.IUserService;
 
@@ -44,6 +45,9 @@ class UserControllerTest {
 
     @MockitoBean
     private IUserService userService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void createDoctorShouldReturn201WhenRequestIsValid() throws Exception {

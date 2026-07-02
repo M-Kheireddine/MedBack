@@ -15,6 +15,7 @@ import tn.iteam.meduserservice.dtos.responses.AuthResponseDto;
 import tn.iteam.meduserservice.dtos.responses.PatientResponseDto;
 import tn.iteam.meduserservice.dtos.responses.UserResponseDto;
 import tn.iteam.meduserservice.exceptions.GlobalExceptionHandler;
+import tn.iteam.meduserservice.filters.JwtAuthenticationFilter;
 import tn.iteam.meduserservice.services.specs.IAuthService;
 import tn.iteam.meduserservice.models.Role;
 
@@ -44,6 +45,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private IAuthService authService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Test
     void registerPatientShouldReturn201WhenRequestIsValid() throws Exception {
