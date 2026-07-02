@@ -46,6 +46,11 @@ pipeline {
             defaultValue: '10',
             description: 'Optional image tag override. When empty, the Jenkins build number is used.'
         )
+        string(
+            name: 'SONAR_TOKEN_CREDENTIALS_ID',
+            defaultValue: 'SONAR-CLOUD-TOKEN',
+            description: 'Jenkins secret text credential id containing the SonarCloud token.'
+        )
     }
 
     environment {
@@ -72,7 +77,25 @@ pipeline {
 
         stage('Maven Test') {
             steps {
-                sh 'mvn -B -ntp -pl MedUserService,MedCoreService -am clean test'
+                sh 'mvn -B -ntp -pl MedUserService,MedCoreService -am clean verify'
+            }
+        }
+
+        stage('SonarCloud Analysis') {
+            steps {
+                withCredentials([
+                    string(
+                        credentialsId: params.SONAR_TOKEN_CREDENTIALS_ID,
+                        variable: 'SONAR_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        mvn -B -ntp -pl MedUserService,MedCoreService -am \
+                          org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+                          -DskipTests \
+                          -Dsonar.token=$SONAR_TOKEN
+                    '''
+                }
             }
         }
 
@@ -125,7 +148,7 @@ pipeline {
     post {
         always {
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'MedUserService/target/*.jar, MedCoreService/target/*.jar'
+            archiveArtifacts allowEmptyArchive: true, artifacts: 'MedUserService/target/*.jar, MedCoreService/target/*.jar, **/target/site/jacoco/**/*'
             cleanWs deleteDirs: true, disableDeferredWipeout: true
         }
         success {
