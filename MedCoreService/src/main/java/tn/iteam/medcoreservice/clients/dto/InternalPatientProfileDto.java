@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InternalPatientProfileDto {
     private String id;
+    private String functionalId;
     private String firstName;
     private String lastName;
     private String email;

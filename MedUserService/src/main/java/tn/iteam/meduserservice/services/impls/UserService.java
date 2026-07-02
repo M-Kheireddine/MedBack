@@ -218,8 +218,13 @@ public class UserService implements IUserService {
     }
 
     private PatientEntity findPatientById(String patientId) {
-        return patientRepository.findById(UUID.fromString(patientId))
-                .orElseThrow(() -> new ResourceNotFoundException("Patient not found with id: " + patientId));
+        try {
+            return patientRepository.findById(UUID.fromString(patientId))
+                    .orElseThrow(() -> new ResourceNotFoundException("Patient not found with identifier: " + patientId));
+        } catch (IllegalArgumentException exception) {
+            return patientRepository.findByFunctionalId(patientId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Patient not found with identifier: " + patientId));
+        }
     }
 
     private void validateEmailAvailability(String email, UUID userId) {

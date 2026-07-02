@@ -19,6 +19,7 @@ public class PatientResponseDto extends UserResponseDto implements Serializable 
     @Serial
     private static final long serialVersionUID = 1L;
 
+    private String functionalId;
     private LocalDate birthDate;
     private String socialSecurityNumber;
     private String bloodType;

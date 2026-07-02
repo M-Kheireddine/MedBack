@@ -65,6 +65,7 @@ public class UserMapper {
                 .createdAt(entity.getCreatedAt())
                 .isActive(entity.getIsActive())
                 .profileImageUrl(resolveProfileImageUrl(entity.getId(), entity.getProfileImageBase64()))
+                .functionalId(entity.getFunctionalId())
                 .birthDate(entity.getBirthDate())
                 .socialSecurityNumber(entity.getSocialSecurityNumber())
                 .bloodType(entity.getBloodType())

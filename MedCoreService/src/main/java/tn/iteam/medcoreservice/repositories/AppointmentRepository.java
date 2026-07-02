@@ -15,6 +15,8 @@ public interface AppointmentRepository extends MongoRepository<Appointment, Stri
 
     List<Appointment> findByPatientIdOrderByStartDateTimeAsc(String patientId);
 
+    List<Appointment> findByPatientIdInOrderByStartDateTimeAsc(List<String> patientIds);
+
     @Query(value = "{ 'doctorId': ?0, 'startDateTime': { $lt: ?2 }, 'endDateTime': { $gt: ?1 } }", sort = "{ 'startDateTime': 1 }")
     List<Appointment> findDoctorAppointmentsInRange(String doctorId, LocalDateTime startDateTime, LocalDateTime endDateTime);
 
@@ -27,6 +29,13 @@ public interface AppointmentRepository extends MongoRepository<Appointment, Stri
 
     List<Appointment> findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
             String patientId,
+            AppointmentStatus status,
+            LocalDateTime endDateTime,
+            LocalDateTime startDateTime
+    );
+
+    List<Appointment> findByPatientIdInAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+            List<String> patientIds,
             AppointmentStatus status,
             LocalDateTime endDateTime,
             LocalDateTime startDateTime

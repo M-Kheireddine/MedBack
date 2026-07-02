@@ -13,4 +13,6 @@ public interface PrescriptionRepository extends MongoRepository<Prescription, St
     List<Prescription> findByDoctorIdOrderByCreatedAtDesc(String doctorId);
 
     List<Prescription> findByPatientIdOrderByCreatedAtDesc(String patientId);
+
+    List<Prescription> findByPatientIdInOrderByCreatedAtDesc(List<String> patientIds);
 }

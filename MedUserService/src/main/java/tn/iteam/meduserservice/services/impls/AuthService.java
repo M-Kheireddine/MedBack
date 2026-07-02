@@ -33,6 +33,7 @@ public class AuthService implements IAuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final FunctionalIdGenerator functionalIdGenerator;
 
     @Override
     public UserResponseDto registerAdmin(AdminRegistrationRequestDto requestDto) {
@@ -68,6 +69,7 @@ public class AuthService implements IAuthService {
                 .password(passwordEncoder.encode(requestDto.getPassword()))
                 .role(Role.PATIENT)
                 .isActive(Boolean.TRUE)
+                .functionalId(functionalIdGenerator.generatePatientFunctionalId())
                 .birthDate(requestDto.getBirthDate())
                 .socialSecurityNumber(requestDto.getSocialSecurityNumber())
                 .bloodType(requestDto.getBloodType())

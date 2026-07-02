@@ -39,10 +39,12 @@ public class PrescriptionService implements IPrescriptionService {
     private final PrescriptionDtoMapper prescriptionDtoMapper;
     private final NotificationEventPublisher notificationEventPublisher;
     private final UserProfileClient userProfileClient;
+    private final PatientIdentifierResolver patientIdentifierResolver;
 
     @Override
     public PrescriptionResponseDto createPrescription(PrescriptionRequestDto requestDto) {
         Prescription prescription = prescriptionMapper.toPrescription(requestDto);
+        prescription.setPatientId(patientIdentifierResolver.resolvePrimaryPatientId(requestDto.getPatientId()));
         Prescription savedPrescription = prescriptionRepository.save(prescription);
         notificationEventPublisher.publishPrescriptionCreated(savedPrescription, requestDto.getRecipientEmail());
         log.info("Prescription created with id={} for doctorId={} patientId={}",
@@ -78,7 +80,9 @@ public class PrescriptionService implements IPrescriptionService {
 
     @Override
     public List<PrescriptionResponseDto> getPrescriptionsByPatientId(String patientId) {
-        return prescriptionRepository.findByPatientIdOrderByCreatedAtDesc(patientId)
+        return prescriptionRepository.findByPatientIdInOrderByCreatedAtDesc(
+                        patientIdentifierResolver.resolveCandidatePatientIds(patientId)
+                )
                 .stream()
                 .map(prescriptionMapper::toPrescriptionResponseDto)
                 .toList();
@@ -90,7 +94,7 @@ public class PrescriptionService implements IPrescriptionService {
         Prescription updatedPrescription = prescriptionMapper.toPrescription(requestDto);
 
         prescription.setDoctorId(updatedPrescription.getDoctorId());
-        prescription.setPatientId(updatedPrescription.getPatientId());
+        prescription.setPatientId(patientIdentifierResolver.resolvePrimaryPatientId(requestDto.getPatientId()));
         prescription.setDoctorNotes(updatedPrescription.getDoctorNotes());
         prescription.setPrescriptionLines(updatedPrescription.getPrescriptionLines());
         prescription.setCreatedAt(resolveCreatedAt(prescription.getCreatedAt()));
@@ -198,6 +202,7 @@ public class PrescriptionService implements IPrescriptionService {
             InternalPatientProfileDto patientProfile = userProfileClient.getPatientProfile(patientId);
             return Optional.of(PrescriptionPatientMetadataDto.builder()
                     .id(patientProfile.getId())
+                    .functionalId(patientProfile.getFunctionalId())
                     .firstName(patientProfile.getFirstName())
                     .lastName(patientProfile.getLastName())
                     .email(patientProfile.getEmail())

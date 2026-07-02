@@ -2,6 +2,7 @@ package tn.iteam.meduserservice.models;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,10 +19,18 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @SuperBuilder(toBuilder = true)
 @Entity
-@Table(name = "patients")
+@Table(
+        name = "patients",
+        indexes = {
+                @Index(name = "idx_patients_functional_id", columnList = "functional_id")
+        }
+)
 public class PatientEntity extends UserEntity {
     @Serial
     private static final long serialVersionUID = 1L;
+
+    @Column(name = "functional_id", unique = true, length = 15)
+    private String functionalId;
 
     @Column(nullable = false)
     private LocalDate birthDate;

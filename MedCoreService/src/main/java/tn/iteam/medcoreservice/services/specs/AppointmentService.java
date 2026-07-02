@@ -23,17 +23,20 @@ public class AppointmentService implements IAppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final AppointmentMapper appointmentMapper;
     private final NotificationEventPublisher notificationEventPublisher;
+    private final PatientIdentifierResolver patientIdentifierResolver;
 
     @Override
     public AppointmentResponseDto createAppointment(AppointmentRequestDto requestDto) {
+        String normalizedPatientId = patientIdentifierResolver.resolvePrimaryPatientId(requestDto.getPatientId());
         validateAppointmentAvailability(
                 null,
                 requestDto.getDoctorId(),
-                requestDto.getPatientId(),
+                normalizedPatientId,
                 requestDto.getStartDateTime(),
                 requestDto.getEndDateTime()
         );
         Appointment appointment = appointmentMapper.toAppointment(requestDto);
+        appointment.setPatientId(normalizedPatientId);
         appointment.setStatus(AppointmentStatus.SCHEDULED);
         Appointment savedAppointment = appointmentRepository.save(appointment);
         notificationEventPublisher.publishAppointmentCreated(savedAppointment, requestDto.getRecipientEmail());
@@ -71,7 +74,9 @@ public class AppointmentService implements IAppointmentService {
 
     @Override
     public List<AppointmentResponseDto> getAppointmentsByPatientId(String patientId) {
-        return appointmentRepository.findByPatientIdOrderByStartDateTimeAsc(patientId)
+        return appointmentRepository.findByPatientIdInOrderByStartDateTimeAsc(
+                        patientIdentifierResolver.resolveCandidatePatientIds(patientId)
+                )
                 .stream()
                 .map(appointmentMapper::toAppointmentResponseDto)
                 .toList();
@@ -80,15 +85,16 @@ public class AppointmentService implements IAppointmentService {
     @Override
     public AppointmentResponseDto updateAppointment(String appointmentId, AppointmentRequestDto requestDto) {
         Appointment appointment = findAppointmentById(appointmentId);
+        String normalizedPatientId = patientIdentifierResolver.resolvePrimaryPatientId(requestDto.getPatientId());
         validateAppointmentAvailability(
                 appointmentId,
                 requestDto.getDoctorId(),
-                requestDto.getPatientId(),
+                normalizedPatientId,
                 requestDto.getStartDateTime(),
                 requestDto.getEndDateTime()
         );
         appointment.setDoctorId(requestDto.getDoctorId());
-        appointment.setPatientId(requestDto.getPatientId());
+        appointment.setPatientId(normalizedPatientId);
         appointment.setStartDateTime(requestDto.getStartDateTime());
         appointment.setEndDateTime(requestDto.getEndDateTime());
         appointment.setReason(requestDto.getReason());
@@ -137,8 +143,8 @@ public class AppointmentService implements IAppointmentService {
                 .anyMatch(appointment -> isDifferentAppointment(appointment, appointmentId));
 
         boolean patientHasConflict = appointmentRepository
-                .findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-                        patientId,
+                .findByPatientIdInAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                        patientIdentifierResolver.resolveCandidatePatientIds(patientId),
                         AppointmentStatus.SCHEDULED,
                         endDateTime,
                         startDateTime
