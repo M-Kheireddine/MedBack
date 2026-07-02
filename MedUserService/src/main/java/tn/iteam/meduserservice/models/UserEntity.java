@@ -57,6 +57,11 @@ public class UserEntity implements Serializable {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
+    @Column(columnDefinition = "TEXT")
+    private String profileImageBase64;
+
+    private String profileImageContentType;
+
     @PrePersist
     public void prePersist() {
         if (id == null) {

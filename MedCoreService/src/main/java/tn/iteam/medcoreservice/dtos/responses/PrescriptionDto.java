@@ -25,5 +25,7 @@ public class PrescriptionDto implements Serializable {
     private String patientId;
     private LocalDateTime createdAt;
     private String doctorNotes;
+    private PrescriptionDoctorMetadataDto doctor;
+    private PrescriptionPatientMetadataDto patient;
     private List<PrescriptionLineDto> prescriptionLines;
 }

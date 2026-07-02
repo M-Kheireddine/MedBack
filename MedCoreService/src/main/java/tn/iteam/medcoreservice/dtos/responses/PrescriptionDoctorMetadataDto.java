@@ -1,32 +1,30 @@
-package tn.iteam.meduserservice.dtos.responses;
+package tn.iteam.medcoreservice.dtos.responses;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.SuperBuilder;
-import tn.iteam.meduserservice.models.Role;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder(toBuilder = true)
-public class UserResponseDto implements Serializable {
+@Builder(toBuilder = true)
+public class PrescriptionDoctorMetadataDto implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private UUID id;
+    private String id;
     private String firstName;
     private String lastName;
     private String email;
-    private Role role;
-    private LocalDateTime createdAt;
-    private Boolean isActive;
+    private String specialty;
+    private String phoneNumber;
+    private String clinicAddress;
+    private String medicalLicenseNumber;
     private String profileImageUrl;
 }

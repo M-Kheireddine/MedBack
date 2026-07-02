@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RestController;
 import tn.iteam.medcoreservice.controllers.specs.IPrescriptionController;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionDto;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionRequestDto;
-import tn.iteam.medcoreservice.mappers.PrescriptionDtoMapper;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionResponseDto;
 import tn.iteam.medcoreservice.services.impls.IPrescriptionService;
 

@@ -1,11 +1,16 @@
 package tn.iteam.medcoreservice.services.specs;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import tn.iteam.medcoreservice.clients.UserProfileClient;
+import tn.iteam.medcoreservice.clients.dto.InternalDoctorProfileDto;
+import tn.iteam.medcoreservice.clients.dto.InternalPatientProfileDto;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionRequestDto;
+import tn.iteam.medcoreservice.dtos.responses.PrescriptionDoctorMetadataDto;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionDto;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionLineDto;
+import tn.iteam.medcoreservice.dtos.responses.PrescriptionPatientMetadataDto;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionResponseDto;
 import tn.iteam.medcoreservice.exceptions.ResourceNotFoundException;
 import tn.iteam.medcoreservice.mappers.PrescriptionDtoMapper;
@@ -21,6 +26,7 @@ import tn.iteam.medcoreservice.services.impls.IPrescriptionService;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Slf4j
@@ -32,6 +38,7 @@ public class PrescriptionService implements IPrescriptionService {
     private final PrescriptionMapper prescriptionMapper;
     private final PrescriptionDtoMapper prescriptionDtoMapper;
     private final NotificationEventPublisher notificationEventPublisher;
+    private final UserProfileClient userProfileClient;
 
     @Override
     public PrescriptionResponseDto createPrescription(PrescriptionRequestDto requestDto) {
@@ -121,6 +128,8 @@ public class PrescriptionService implements IPrescriptionService {
                 .patientId(prescription.getPatientId())
                 .createdAt(prescription.getCreatedAt())
                 .doctorNotes(prescription.getDoctorNotes())
+                .doctor(resolveDoctorMetadata(prescription.getDoctorId()).orElse(null))
+                .patient(resolvePatientMetadata(prescription.getPatientId()).orElse(null))
                 .prescriptionLines(toPrescriptionLineDtos(prescription.getPrescriptionLines(), medicationById))
                 .build();
     }
@@ -154,5 +163,52 @@ public class PrescriptionService implements IPrescriptionService {
 
     private LocalDateTime resolveCreatedAt(LocalDateTime createdAt) {
         return createdAt == null ? LocalDateTime.now() : createdAt;
+    }
+
+    private Optional<PrescriptionDoctorMetadataDto> resolveDoctorMetadata(String doctorId) {
+        if (doctorId == null || doctorId.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            InternalDoctorProfileDto doctorProfile = userProfileClient.getDoctorProfile(doctorId);
+            return Optional.of(PrescriptionDoctorMetadataDto.builder()
+                    .id(doctorProfile.getId())
+                    .firstName(doctorProfile.getFirstName())
+                    .lastName(doctorProfile.getLastName())
+                    .email(doctorProfile.getEmail())
+                    .specialty(doctorProfile.getSpecialty())
+                    .phoneNumber(doctorProfile.getPhoneNumber())
+                    .clinicAddress(doctorProfile.getClinicAddress())
+                    .medicalLicenseNumber(doctorProfile.getMedicalLicenseNumber())
+                    .profileImageUrl(doctorProfile.getProfileImageUrl())
+                    .build());
+        } catch (Exception exception) {
+            log.warn("Unable to resolve doctor metadata for doctorId={}: {}", doctorId, exception.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private Optional<PrescriptionPatientMetadataDto> resolvePatientMetadata(String patientId) {
+        if (patientId == null || patientId.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            InternalPatientProfileDto patientProfile = userProfileClient.getPatientProfile(patientId);
+            return Optional.of(PrescriptionPatientMetadataDto.builder()
+                    .id(patientProfile.getId())
+                    .firstName(patientProfile.getFirstName())
+                    .lastName(patientProfile.getLastName())
+                    .email(patientProfile.getEmail())
+                    .birthDate(patientProfile.getBirthDate())
+                    .socialSecurityNumber(patientProfile.getSocialSecurityNumber())
+                    .bloodType(patientProfile.getBloodType())
+                    .profileImageUrl(patientProfile.getProfileImageUrl())
+                    .build());
+        } catch (Exception exception) {
+            log.warn("Unable to resolve patient metadata for patientId={}: {}", patientId, exception.getMessage());
+            return Optional.empty();
+        }
     }
 }

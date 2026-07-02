@@ -6,9 +6,12 @@ public class ApiUtils {
     private static final String AUTH_API = "/auth";
     private static final String ADMIN_API = "/admin";
     private static final String PUBLIC_API = "/public";
+    private static final String INTERNAL_API = "/internal";
     private static final String USER_API = "/users";
     private static final String DOCTOR_API = "/doctors";
     private static final String PATIENT_API = "/patients";
+    private static final String PROFILE_API = "/profile";
+    private static final String FILE_API = "/files";
 
     public static final String API_REGISTER_ADMIN = VERSION_1 + AUTH_API + "/register/admin";
     public static final String API_REGISTER_PATIENT = VERSION_1 + AUTH_API + "/register/patient";
@@ -30,4 +33,11 @@ public class ApiUtils {
     public static final String API_UNARCHIVE_PATIENT = VERSION_1 + ADMIN_API + PATIENT_API + "/{patientId}/unarchive";
     public static final String API_GET_PATIENT_PROFILE = VERSION_1 + ADMIN_API + PATIENT_API + "/{patientId}/profile";
     public static final String API_GET_PATIENT_SUMMARY = VERSION_1 + ADMIN_API + PATIENT_API + "/{patientId}/summary";
+    public static final String API_PROFILE_GET_DOCTOR = VERSION_1 + PROFILE_API + DOCTOR_API + "/{doctorId}";
+    public static final String API_PROFILE_GET_PATIENT = VERSION_1 + PROFILE_API + PATIENT_API + "/{patientId}";
+    public static final String API_UPLOAD_DOCTOR_PROFILE_IMAGE = VERSION_1 + PROFILE_API + DOCTOR_API + "/{doctorId}/image";
+    public static final String API_UPLOAD_PATIENT_PROFILE_IMAGE = VERSION_1 + PROFILE_API + PATIENT_API + "/{patientId}/image";
+    public static final String API_GET_PROFILE_IMAGE = VERSION_1 + FILE_API + PROFILE_API + "/{userId}";
+    public static final String API_INTERNAL_GET_DOCTOR_PROFILE = VERSION_1 + INTERNAL_API + DOCTOR_API + "/{doctorId}/profile";
+    public static final String API_INTERNAL_GET_PATIENT_PROFILE = VERSION_1 + INTERNAL_API + PATIENT_API + "/{patientId}/profile";
 }

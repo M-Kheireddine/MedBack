@@ -3,11 +3,13 @@ package tn.iteam.meduserservice.services.impls;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import tn.iteam.meduserservice.dtos.requests.DoctorRequestDto;
 import tn.iteam.meduserservice.dtos.responses.DoctorDto;
 import tn.iteam.meduserservice.dtos.responses.DoctorResponseDto;
 import tn.iteam.meduserservice.dtos.responses.PatientDto;
 import tn.iteam.meduserservice.dtos.responses.PatientResponseDto;
+import tn.iteam.meduserservice.dtos.responses.ProfileImageContentDto;
 import tn.iteam.meduserservice.dtos.responses.UserResponseDto;
 import tn.iteam.meduserservice.exceptions.BusinessRuleException;
 import tn.iteam.meduserservice.exceptions.DuplicateResourceException;
@@ -27,6 +29,7 @@ import tn.iteam.meduserservice.services.specs.IUserService;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -177,6 +180,33 @@ public class UserService implements IUserService {
         return patientDtoMapper.toPatientDto(userMapper.toPatientResponseDto(patientRepository.save(patient)));
     }
 
+    @Override
+    public DoctorDto updateDoctorProfileImage(String doctorId, MultipartFile image) {
+        DoctorEntity doctor = findDoctorById(doctorId);
+        storeProfileImage(doctor, image);
+        return doctorDtoMapper.toDoctorDto(userMapper.toDoctorResponseDto(doctorRepository.save(doctor)));
+    }
+
+    @Override
+    public PatientDto updatePatientProfileImage(String patientId, MultipartFile image) {
+        PatientEntity patient = findPatientById(patientId);
+        storeProfileImage(patient, image);
+        return patientDtoMapper.toPatientDto(userMapper.toPatientResponseDto(patientRepository.save(patient)));
+    }
+
+    @Override
+    public ProfileImageContentDto getProfileImage(String userId) {
+        UserEntity user = findUserById(userId);
+        if (user.getProfileImageBase64() == null || user.getProfileImageBase64().isBlank()) {
+            throw new ResourceNotFoundException("Profile image not found for user id: " + userId);
+        }
+
+        return ProfileImageContentDto.builder()
+                .content(Base64.getDecoder().decode(user.getProfileImageBase64()))
+                .contentType(resolveContentType(user.getProfileImageContentType()))
+                .build();
+    }
+
     private UserEntity findUserById(String userId) {
         return userRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
@@ -223,5 +253,35 @@ public class UserService implements IUserService {
 
     private boolean containsValue(String value, String normalizedSearch) {
         return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedSearch);
+    }
+
+    private void storeProfileImage(UserEntity user, MultipartFile image) {
+        validateProfileImage(image);
+
+        try {
+            user.setProfileImageBase64(Base64.getEncoder().encodeToString(image.getBytes()));
+            user.setProfileImageContentType(resolveContentType(image.getContentType()));
+        } catch (Exception exception) {
+            throw new BusinessRuleException("Unable to process the uploaded profile image.");
+        }
+    }
+
+    private void validateProfileImage(MultipartFile image) {
+        if (image == null || image.isEmpty()) {
+            throw new BusinessRuleException("Profile image file is required.");
+        }
+
+        String contentType = image.getContentType();
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            throw new BusinessRuleException("Only image files are allowed for profile upload.");
+        }
+    }
+
+    private String resolveContentType(String contentType) {
+        if (contentType == null || contentType.isBlank()) {
+            return "image/jpeg";
+        }
+
+        return contentType;
     }
 }
