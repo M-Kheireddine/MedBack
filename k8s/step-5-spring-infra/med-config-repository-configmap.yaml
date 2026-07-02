@@ -1,0 +1,178 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: med-config-repository
+  namespace: medback
+  labels:
+    app.kubernetes.io/name: med-config-repository
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: medback-platform
+data:
+  application.yml: |
+    spring:
+      cloud:
+        config:
+          enabled: true
+        discovery:
+          enabled: true
+
+    server:
+      servlet:
+        context-path: /api
+
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health, refresh
+
+    eureka:
+      client:
+        service-url:
+          defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka}
+  med-user-service.yml: |
+    spring:
+      datasource:
+        url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:MED_USER_DB}}
+        username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:postgres}}
+        password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:MED_USER_PASSWORD}}
+        driver-class-name: org.postgresql.Driver
+      jpa:
+        hibernate:
+          ddl-auto: update
+        show-sql: true
+        properties:
+          hibernate:
+            format_sql: true
+            dialect: org.hibernate.dialect.PostgreSQLDialect
+
+    medback:
+      security:
+        jwt:
+          secret: ${JWT_SECRET}
+          expiration-minutes: ${JWT_EXPIRATION_MINUTES:1440}
+
+    server:
+      port: 8081
+  med-core-service.yml: |
+    spring:
+      data:
+        mongodb:
+          uri: ${SPRING_DATA_MONGODB_URI:mongodb://MED_CORE_USER:MED_CORE_PASSWORD@med-mongodb:27017/MED_CORE_DB?authSource=admin}
+          auto-index-creation: true
+      kafka:
+        bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+        producer:
+          key-serializer: org.apache.kafka.common.serialization.StringSerializer
+          value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+          acks: all
+          retries: 3
+          properties:
+            spring.json.add.type.headers: false
+
+    server:
+      port: 8083
+  med-notification-service.yml: |
+    server:
+      port: 8085
+
+    spring:
+      kafka:
+        bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+        consumer:
+          group-id: ${KAFKA_CONSUMER_GROUP_ID:medback-group}
+          key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+          value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+          auto-offset-reset: earliest
+          properties:
+            spring.json.trusted.packages: "*"
+            spring.json.use.type.headers: false
+            spring.json.value.default.type: tn.iteam.mednotificationservice.dtos.events.NotificationEvent
+      mail:
+        host: ${MAIL_HOST:localhost}
+        port: ${MAIL_PORT:1025}
+        username: ${MAIL_USERNAME:}
+        password: ${MAIL_PASSWORD:}
+        properties:
+          mail:
+            smtp:
+              auth: ${MAIL_SMTP_AUTH:false}
+              starttls:
+                enable: ${MAIL_SMTP_STARTTLS:false}
+
+    medback:
+      kafka:
+        topics:
+          appointment: appointment_topic
+          prescription: prescription_topic
+      mail:
+        from: ${MAIL_FROM:no-reply@medback.local}
+        simulation-enabled: ${MAIL_SIMULATION_ENABLED:true}
+  med-chatboot-service.yml: |
+    server:
+      port: 8084
+
+    spring:
+      ai:
+        model:
+          chat: ollama
+        ollama:
+          base-url: ${OLLAMA_BASE_URL:http://ollama:11434}
+          chat:
+            model: ${OLLAMA_CHAT_MODEL:llama3}
+            temperature: ${OLLAMA_CHAT_TEMPERATURE:0.4}
+
+    medback:
+      chatbot:
+        system-prompt: >
+          You are an expert medical AI assistant helping a doctor. Provide concise,
+          professional, and accurate medical insights based strictly on the provided
+          symptoms.
+  med-gateway-service.yml: |
+    spring:
+      main:
+        web-application-type: reactive
+      cloud:
+        gateway:
+          server:
+            webflux:
+              discovery:
+                locator:
+                  enabled: false
+              default-filters:
+                - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin RETAIN_FIRST
+              globalcors:
+                cors-configurations:
+                  '[/**]':
+                    allowedOrigins:
+                      - ${FRONTEND_ORIGIN:http://medback.local}
+                    allowedMethods:
+                      - GET
+                      - POST
+                      - PUT
+                      - PATCH
+                      - DELETE
+                      - OPTIONS
+                    allowedHeaders:
+                      - "*"
+                    allowCredentials: true
+              routes:
+                - id: med-user-service
+                  uri: lb://med-user-service
+                  predicates:
+                    - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/admin/doctors/**,/api/v1/admin/patients/**
+                - id: med-core-service
+                  uri: lb://med-core-service
+                  predicates:
+                    - Path=/api/v1/admin/medications/**,/api/v1/medications/**,/api/v1/public/medications/**,/api/v1/appointments/**,/api/v1/prescriptions/**,/api/uploads/medications/**
+                - id: med-chatboot-service
+                  uri: lb://med-chatboot-service
+                  predicates:
+                    - Path=/api/v1/chat/**
+                - id: med-notification-service
+                  uri: lb://med-notification-service
+                  predicates:
+                    - Path=/api/v1/notifications/**
+
+    server:
+      port: 8080

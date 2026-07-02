@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: med-postgres-pvc
+  namespace: medback
+  labels:
+    app.kubernetes.io/name: med-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: medback-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

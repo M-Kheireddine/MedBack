@@ -194,6 +194,21 @@ services:
     networks:
       - med-network
 
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: med-kafka-ui
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
+      KAFKA_CLUSTERS_0_NAME: medback-kafka
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    depends_on:
+      - kafka
+    networks:
+      - med-network
+
   prometheus:
     image: prom/prometheus:latest
     container_name: med-prometheus

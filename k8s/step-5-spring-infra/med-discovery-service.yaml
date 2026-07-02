@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: med-discovery
+  namespace: medback
+  labels:
+    app.kubernetes.io/name: med-discovery
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: medback-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: med-discovery
+    app.kubernetes.io/component: infrastructure
+  ports:
+    - name: http
+      port: 8761
+      targetPort: 8761
+      protocol: TCP

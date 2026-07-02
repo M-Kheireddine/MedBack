@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: med-chatboot-service
+  namespace: medback
+  labels:
+    app.kubernetes.io/name: med-chatboot-service
+    app.kubernetes.io/component: business
+    app.kubernetes.io/part-of: medback-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: med-chatboot-service
+      app.kubernetes.io/component: business
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: med-chatboot-service
+        app.kubernetes.io/component: business
+        app.kubernetes.io/part-of: medback-platform
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /api/actuator/prometheus
+        prometheus.io/port: "8084"
+    spec:
+      containers:
+        - name: med-chatboot-service
+          image: kheireddinemechergui/med-chatboot-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8084
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: medback-global-config
+            - secretRef:
+                name: medback-global-secret
+          env:
+            - name: SPRING_APPLICATION_NAME
+              value: med-chatboot-service
+            - name: MED_CHATBOT_SERVICE_PORT
+              value: "8084"
+          readinessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8084
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /api/actuator/health
+              port: 8084
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi

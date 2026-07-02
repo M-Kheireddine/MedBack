@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: med-core-service
+  namespace: medback
+  labels:
+    app.kubernetes.io/name: med-core-service
+    app.kubernetes.io/component: business
+    app.kubernetes.io/part-of: medback-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: med-core-service
+    app.kubernetes.io/component: business
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http
+      protocol: TCP

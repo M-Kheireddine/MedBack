@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: med-mongodb
+  namespace: medback
+  labels:
+    app.kubernetes.io/name: med-mongodb
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: medback-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: med-mongodb
+    app.kubernetes.io/component: database
+  ports:
+    - name: mongodb
+      port: 27017
+      targetPort: 27017
+      protocol: TCP

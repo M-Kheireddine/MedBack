@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medback-global-config
+  namespace: medback
+  labels:
+    app.kubernetes.io/name: medback-global-config
+    app.kubernetes.io/part-of: medback-platform
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+
+  CONFIG_SERVER_URL: "http://med-config:8086/api"
+  EUREKA_SERVER_URL: "http://med-discovery:8761/eureka"
+  FRONTEND_ORIGIN: "http://medback.local"
+  OLLAMA_BASE_URL: "http://ollama:11434"
+  OLLAMA_CHAT_MODEL: "llama3"
+  OLLAMA_CHAT_TEMPERATURE: "0.4"
+
+  POSTGRES_HOST: "med-postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "MED_USER_DB"
+  DB_HOST: "med-postgres"
+  DB_PORT: "5432"
+  DB_NAME: "MED_USER_DB"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://med-postgres:5432/MED_USER_DB"
+
+  MONGO_HOST: "med-mongodb"
+  MONGO_PORT: "27017"
+  MONGO_DATABASE: "MED_CORE_DB"
+  MONGO_AUTH_SOURCE: "admin"
+
+  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  KAFKA_CONSUMER_GROUP_ID: "medback-group"
+  KAFKA_SECURITY_PROTOCOL: "PLAINTEXT"
+
+  APPOINTMENT_TOPIC: "appointment_topic"
+  PRESCRIPTION_TOPIC: "prescription_topic"
+  NOTIFICATION_TOPIC: "notification_topic"
+
+  MAIL_FROM: "no-reply@medback.local"
+  MAIL_SIMULATION_ENABLED: "true"
+
+  JWT_EXPIRATION_MINUTES: "1440"
