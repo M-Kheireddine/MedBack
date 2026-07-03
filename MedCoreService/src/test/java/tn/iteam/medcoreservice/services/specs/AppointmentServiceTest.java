@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,11 +48,6 @@ class AppointmentServiceTest {
     private final AppointmentMapper appointmentMapper = new AppointmentMapper();
 
     private AppointmentService buildService() {
-        when(patientIdentifierResolver.resolvePrimaryPatientId(anyString()))
-                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
-        when(patientIdentifierResolver.resolveCandidatePatientIds(anyString()))
-                .thenAnswer(invocation -> List.of(invocation.getArgument(0, String.class)));
-
         return new AppointmentService(
                 appointmentRepository,
                 appointmentMapper,
@@ -73,6 +67,8 @@ class AppointmentServiceTest {
                 LocalDateTime.of(2026, 7, 3, 10, 0),
                 LocalDateTime.of(2026, 7, 3, 10, 30)
         );
+        stubPrimaryPatientIdentifierResolution();
+        stubCandidatePatientIdentifierResolution();
 
         when(appointmentRepository.findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
                 eq("doctor-1"), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
@@ -111,6 +107,8 @@ class AppointmentServiceTest {
                 LocalDateTime.of(2026, 7, 3, 11, 0),
                 LocalDateTime.of(2026, 7, 3, 11, 30)
         );
+        stubPrimaryPatientIdentifierResolution();
+        stubCandidatePatientIdentifierResolution();
 
         when(appointmentRepository.findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
                 eq("doctor-2"), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
@@ -142,6 +140,8 @@ class AppointmentServiceTest {
                 LocalDateTime.of(2026, 7, 3, 13, 0),
                 LocalDateTime.of(2026, 7, 3, 13, 30)
         );
+        stubPrimaryPatientIdentifierResolution();
+        stubCandidatePatientIdentifierResolution();
 
         when(appointmentRepository.findById("appointment-3")).thenReturn(Optional.of(existingAppointment));
         when(appointmentRepository.findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
@@ -170,6 +170,7 @@ class AppointmentServiceTest {
         AppointmentStatusUpdateRequestDto requestDto = AppointmentStatusUpdateRequestDto.builder()
                 .status(AppointmentStatus.SCHEDULED)
                 .build();
+        stubCandidatePatientIdentifierResolution();
 
         when(appointmentRepository.findById("appointment-4")).thenReturn(Optional.of(existingAppointment));
         when(appointmentRepository.findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
@@ -251,6 +252,16 @@ class AppointmentServiceTest {
                 .reason("General consultation")
                 .recipientEmail("recipient@example.com")
                 .build();
+    }
+
+    private void stubPrimaryPatientIdentifierResolution() {
+        when(patientIdentifierResolver.resolvePrimaryPatientId(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
+    }
+
+    private void stubCandidatePatientIdentifierResolution() {
+        when(patientIdentifierResolver.resolveCandidatePatientIds(any()))
+                .thenAnswer(invocation -> List.of(invocation.getArgument(0, String.class)));
     }
 
     private Appointment appointment(

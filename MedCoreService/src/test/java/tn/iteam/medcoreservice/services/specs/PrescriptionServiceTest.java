@@ -14,7 +14,6 @@ import tn.iteam.medcoreservice.exceptions.ResourceNotFoundException;
 import tn.iteam.medcoreservice.mappers.PrescriptionDtoMapper;
 import tn.iteam.medcoreservice.mappers.PrescriptionMapper;
 import tn.iteam.medcoreservice.messaging.NotificationEventPublisher;
-import tn.iteam.medcoreservice.models.Medication;
 import tn.iteam.medcoreservice.models.Prescription;
 import tn.iteam.medcoreservice.models.PrescriptionLine;
 import tn.iteam.medcoreservice.repositories.MedicationRepository;
@@ -28,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,20 +54,6 @@ class PrescriptionServiceTest {
     private final PrescriptionMapper prescriptionMapper = new PrescriptionMapper();
 
     private PrescriptionService buildService() {
-        when(patientIdentifierResolver.resolvePrimaryPatientId(anyString()))
-                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
-        when(patientIdentifierResolver.resolveCandidatePatientIds(anyString()))
-                .thenAnswer(invocation -> List.of(invocation.getArgument(0, String.class)));
-        when(medicationRepository.findAllById(anyList())).thenReturn(List.of());
-        when(prescriptionDtoMapper.toPrescriptionLineDto(any(PrescriptionLine.class))).thenAnswer(invocation -> {
-            PrescriptionLine line = invocation.getArgument(0, PrescriptionLine.class);
-            return PrescriptionLineDto.builder()
-                    .medicationId(line.getMedicationId())
-                    .dosage(line.getDosage())
-                    .duration(line.getDuration())
-                    .build();
-        });
-
         return new PrescriptionService(
                 prescriptionRepository,
                 medicationRepository,
@@ -98,6 +82,9 @@ class PrescriptionServiceTest {
                                 .build()
                 ))
                 .build();
+        stubPrimaryPatientIdentifierResolution();
+        stubMedicationLookup();
+        stubPrescriptionLineMapping();
 
         when(prescriptionRepository.save(any(Prescription.class))).thenAnswer(invocation -> {
             Prescription prescription = invocation.getArgument(0);
@@ -128,6 +115,8 @@ class PrescriptionServiceTest {
     @Test
     void getAllPrescriptionsShouldReturnMappedRepositoryResults() {
         PrescriptionService prescriptionService = buildService();
+        stubMedicationLookup();
+        stubPrescriptionLineMapping();
 
         Prescription latest = prescription("prescription-1", "doctor-1", "patient-1");
         Prescription older = prescription("prescription-2", "doctor-2", "patient-2");
@@ -143,6 +132,8 @@ class PrescriptionServiceTest {
     @Test
     void getPrescriptionByIdShouldReturnMappedPrescriptionWhenFound() {
         PrescriptionService prescriptionService = buildService();
+        stubMedicationLookup();
+        stubPrescriptionLineMapping();
 
         Prescription prescription = prescription("prescription-42", "doctor-42", "patient-42");
         when(prescriptionRepository.findById("prescription-42")).thenReturn(Optional.of(prescription));
@@ -170,6 +161,8 @@ class PrescriptionServiceTest {
     @Test
     void getPrescriptionsByDoctorIdShouldReturnMappedResults() {
         PrescriptionService prescriptionService = buildService();
+        stubMedicationLookup();
+        stubPrescriptionLineMapping();
 
         when(prescriptionRepository.findByDoctorIdOrderByCreatedAtDesc("doctor-7"))
                 .thenReturn(List.of(prescription("prescription-7", "doctor-7", "patient-7")));
@@ -183,6 +176,9 @@ class PrescriptionServiceTest {
     @Test
     void getPrescriptionsByPatientIdShouldReturnMappedResults() {
         PrescriptionService prescriptionService = buildService();
+        stubCandidatePatientIdentifierResolution();
+        stubMedicationLookup();
+        stubPrescriptionLineMapping();
 
         when(prescriptionRepository.findByPatientIdInOrderByCreatedAtDesc(List.of("patient-9")))
                 .thenReturn(List.of(prescription("prescription-9", "doctor-9", "patient-9")));
@@ -220,5 +216,30 @@ class PrescriptionServiceTest {
                                 .build()
                 ))
                 .build();
+    }
+
+    private void stubPrimaryPatientIdentifierResolution() {
+        when(patientIdentifierResolver.resolvePrimaryPatientId(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
+    }
+
+    private void stubCandidatePatientIdentifierResolution() {
+        when(patientIdentifierResolver.resolveCandidatePatientIds(any()))
+                .thenAnswer(invocation -> List.of(invocation.getArgument(0, String.class)));
+    }
+
+    private void stubMedicationLookup() {
+        when(medicationRepository.findAllById(anyList())).thenReturn(List.of());
+    }
+
+    private void stubPrescriptionLineMapping() {
+        when(prescriptionDtoMapper.toPrescriptionLineDto(any(PrescriptionLine.class))).thenAnswer(invocation -> {
+            PrescriptionLine line = invocation.getArgument(0, PrescriptionLine.class);
+            return PrescriptionLineDto.builder()
+                    .medicationId(line.getMedicationId())
+                    .dosage(line.getDosage())
+                    .duration(line.getDuration())
+                    .build();
+        });
     }
 }
