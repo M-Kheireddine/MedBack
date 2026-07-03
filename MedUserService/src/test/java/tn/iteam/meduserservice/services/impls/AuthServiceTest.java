@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 import tn.iteam.meduserservice.dtos.requests.AuthRequestDto;
 import tn.iteam.meduserservice.dtos.requests.AdminRegistrationRequestDto;
 import tn.iteam.meduserservice.dtos.requests.PatientRegistrationRequestDto;
@@ -31,6 +32,7 @@ import tn.iteam.meduserservice.repositories.UserRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -291,6 +293,34 @@ class AuthServiceTest {
     }
 
     @Test
+    void registerAdminShouldThrowWhenAuthenticatedUserHasNoAdminRole() {
+        AdminRegistrationRequestDto requestDto = AdminRegistrationRequestDto.builder()
+                .firstName("System")
+                .lastName("Admin")
+                .email("admin@medback.com")
+                .password("AdminPass123")
+                .build();
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        "doctor@medback.com",
+                        "ignored",
+                        Collections.emptyList()
+                )
+        );
+
+        when(userRepository.findByEmail(requestDto.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.countByRole(Role.ADMIN)).thenReturn(1L);
+
+        AccessDeniedException exception = assertThrows(
+                AccessDeniedException.class,
+                () -> authService.registerAdmin(requestDto)
+        );
+
+        assertEquals("Admin registration is only allowed for an authenticated admin after bootstrap.", exception.getMessage());
+    }
+
+    @Test
     void registerAdminShouldAllowWhenCurrentUserHasAdminRole() {
         AdminRegistrationRequestDto requestDto = AdminRegistrationRequestDto.builder()
                 .firstName("Second")
@@ -316,5 +346,26 @@ class AuthServiceTest {
 
         assertEquals(Role.ADMIN, response.getRole());
         assertEquals("admin2@medback.com", response.getEmail());
+    }
+
+    @Test
+    void validateEmailAvailabilityShouldAllowCurrentUserToKeepSameEmail() {
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findByEmail("doctor@medback.com"))
+                .thenReturn(Optional.of(UserEntity.builder().id(userId).email("doctor@medback.com").build()));
+
+        ReflectionTestUtils.invokeMethod(authService, "validateEmailAvailability", "doctor@medback.com", userId);
+    }
+
+    @Test
+    void validateEmailAvailabilityShouldThrowWhenAnotherUserAlreadyUsesEmail() {
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findByEmail("doctor@medback.com"))
+                .thenReturn(Optional.of(UserEntity.builder().id(UUID.randomUUID()).email("doctor@medback.com").build()));
+
+        assertThrows(
+                DuplicateResourceException.class,
+                () -> ReflectionTestUtils.invokeMethod(authService, "validateEmailAvailability", "doctor@medback.com", userId)
+        );
     }
 }

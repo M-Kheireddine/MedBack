@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,6 +38,7 @@ import static tn.iteam.meduserservice.utils.ApiUtils.API_CREATE_DOCTOR;
 import static tn.iteam.meduserservice.utils.ApiUtils.API_GET_ALL_DOCTORS;
 import static tn.iteam.meduserservice.utils.ApiUtils.API_GET_ALL_PATIENTS;
 import static tn.iteam.meduserservice.utils.ApiUtils.API_GET_ALL_USERS;
+import static tn.iteam.meduserservice.utils.ApiUtils.API_ARCHIVE_PATIENT;
 import static tn.iteam.meduserservice.utils.ApiUtils.API_GET_DOCTOR_BY_ID;
 import static tn.iteam.meduserservice.utils.ApiUtils.API_GET_PATIENT_BY_ID;
 import static tn.iteam.meduserservice.utils.ApiUtils.API_GET_USER_BY_ID;
@@ -168,6 +170,28 @@ class UserControllerTest {
     }
 
     @Test
+    void getDoctorByIdShouldReturnDoctorWhenDoctorExists() throws Exception {
+        DoctorResponseDto responseDto = DoctorResponseDto.builder()
+                .id(UUID.randomUUID())
+                .firstName("John")
+                .lastName("Smith")
+                .email("doctor@medback.com")
+                .role(Role.DOCTOR)
+                .createdAt(LocalDateTime.of(2026, 7, 3, 9, 0))
+                .isActive(Boolean.TRUE)
+                .specialty("Cardiology")
+                .medicalLicenseNumber("LIC-1")
+                .build();
+
+        when(userService.getDoctorById("doctor-1")).thenReturn(responseDto);
+
+        mockMvc.perform(get(API_GET_DOCTOR_BY_ID, "doctor-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("doctor@medback.com"))
+                .andExpect(jsonPath("$.specialty").value("Cardiology"));
+    }
+
+    @Test
     void getAllDoctorsShouldReturnMappedDoctors() throws Exception {
         List<DoctorResponseDto> responseDtos = List.of(
                 DoctorResponseDto.builder()
@@ -265,6 +289,27 @@ class UserControllerTest {
         mockMvc.perform(get(API_GET_PATIENT_BY_ID, "patient-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.functionalId").value("PAT-100-200-300"));
+    }
+
+    @Test
+    void archivePatientShouldReturnUpdatedPatient() throws Exception {
+        PatientResponseDto responseDto = PatientResponseDto.builder()
+                .id(UUID.randomUUID())
+                .firstName("Ariel")
+                .lastName("Richardson")
+                .email("patient@medback.com")
+                .role(Role.PATIENT)
+                .createdAt(LocalDateTime.of(2026, 7, 3, 9, 0))
+                .isActive(Boolean.FALSE)
+                .functionalId("PAT-100-200-300")
+                .build();
+
+        when(userService.archivePatient("patient-1")).thenReturn(responseDto);
+
+        mockMvc.perform(patch(API_ARCHIVE_PATIENT, "patient-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.functionalId").value("PAT-100-200-300"))
+                .andExpect(jsonPath("$.isActive").value(false));
     }
 
     @Test

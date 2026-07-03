@@ -159,6 +159,19 @@ class UserServiceTest {
     }
 
     @Test
+    void createDoctorShouldThrowWhenPasswordIsNull() {
+        UserService userService = buildService();
+        DoctorRequestDto requestDto = doctorRequest("doctor@medback.com", null);
+
+        BusinessRuleException exception = assertThrows(
+                BusinessRuleException.class,
+                () -> userService.createDoctor(requestDto)
+        );
+
+        assertEquals("Doctor password is required when creating a doctor account.", exception.getMessage());
+    }
+
+    @Test
     void createDoctorShouldThrowWhenEmailAlreadyExists() {
         UserService userService = buildService();
         DoctorRequestDto requestDto = doctorRequest("doctor@medback.com", "Password123");
@@ -223,6 +236,46 @@ class UserServiceTest {
         assertEquals("encoded-new-password", existingDoctor.getPassword());
         assertEquals("doctor-updated@medback.com", response.getEmail());
         verify(passwordEncoder).encode("NewPassword123");
+    }
+
+    @Test
+    void updateDoctorShouldKeepCurrentPasswordWhenNewPasswordIsNull() {
+        UserService userService = buildService();
+        UUID doctorId = UUID.randomUUID();
+        DoctorEntity existingDoctor = doctorEntity(doctorId, "doctor@medback.com", "John", "Smith", "Cardiology", "LIC-100", Boolean.TRUE);
+        existingDoctor.setPassword("current-password");
+        DoctorRequestDto requestDto = doctorRequest("doctor-updated@medback.com", null);
+
+        when(doctorRepository.findById(doctorId)).thenReturn(Optional.of(existingDoctor));
+        when(userRepository.findByEmail(requestDto.getEmail())).thenReturn(Optional.empty());
+        when(doctorRepository.existsByMedicalLicenseNumberAndIdNot(requestDto.getMedicalLicenseNumber(), doctorId)).thenReturn(false);
+        when(doctorRepository.save(any(DoctorEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DoctorResponseDto response = userService.updateDoctor(doctorId.toString(), requestDto);
+
+        assertEquals("current-password", existingDoctor.getPassword());
+        assertEquals("doctor-updated@medback.com", response.getEmail());
+        verify(passwordEncoder, never()).encode(any(CharSequence.class));
+    }
+
+    @Test
+    void updateDoctorShouldAllowKeepingSameEmailForCurrentDoctor() {
+        UserService userService = buildService();
+        UUID doctorId = UUID.randomUUID();
+        DoctorEntity existingDoctor = doctorEntity(doctorId, "doctor@medback.com", "John", "Smith", "Cardiology", "LIC-100", Boolean.TRUE);
+        DoctorRequestDto requestDto = doctorRequest("doctor@medback.com", "Password123");
+
+        when(doctorRepository.findById(doctorId)).thenReturn(Optional.of(existingDoctor));
+        when(userRepository.findByEmail(requestDto.getEmail()))
+                .thenReturn(Optional.of(UserEntity.builder().id(doctorId).email(requestDto.getEmail()).build()));
+        when(doctorRepository.existsByMedicalLicenseNumberAndIdNot(requestDto.getMedicalLicenseNumber(), doctorId)).thenReturn(false);
+        when(passwordEncoder.encode("Password123")).thenReturn("encoded-updated-password");
+        when(doctorRepository.save(any(DoctorEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DoctorResponseDto response = userService.updateDoctor(doctorId.toString(), requestDto);
+
+        assertEquals("doctor@medback.com", response.getEmail());
+        assertEquals("encoded-updated-password", existingDoctor.getPassword());
     }
 
     @Test
@@ -339,6 +392,133 @@ class UserServiceTest {
         assertEquals(1, results.size());
         assertEquals("Sam", results.get(0).getFirstName());
         assertEquals("Cardiology", results.get(0).getSpecialty());
+    }
+
+    @Test
+    void searchPublicDoctorsShouldMatchByLastName() {
+        UserService userService = buildService();
+        DoctorEntity doctor = doctorEntity(UUID.randomUUID(), "doctor@medback.com", "Noah", "Richardson", "Cardiology", "LIC-100", Boolean.TRUE);
+
+        when(doctorRepository.findAll()).thenReturn(List.of(doctor));
+        when(doctorDtoMapper.toDoctorDto(any(DoctorResponseDto.class))).thenAnswer(invocation -> {
+            DoctorResponseDto response = invocation.getArgument(0);
+            return DoctorDto.builder()
+                    .id(response.getId())
+                    .firstName(response.getFirstName())
+                    .lastName(response.getLastName())
+                    .specialty(response.getSpecialty())
+                    .build();
+        });
+
+        List<DoctorDto> results = userService.searchPublicDoctors("rich", null);
+
+        assertEquals(1, results.size());
+        assertEquals("Richardson", results.get(0).getLastName());
+    }
+
+    @Test
+    void searchPublicDoctorsShouldMatchBySpecialtyWhenNamesDoNotMatch() {
+        UserService userService = buildService();
+        DoctorEntity doctor = doctorEntity(UUID.randomUUID(), "doctor@medback.com", "Noah", "Brown", "Cardiology", "LIC-100", Boolean.TRUE);
+
+        when(doctorRepository.findAll()).thenReturn(List.of(doctor));
+        when(doctorDtoMapper.toDoctorDto(any(DoctorResponseDto.class))).thenAnswer(invocation -> {
+            DoctorResponseDto response = invocation.getArgument(0);
+            return DoctorDto.builder()
+                    .id(response.getId())
+                    .firstName(response.getFirstName())
+                    .lastName(response.getLastName())
+                    .specialty(response.getSpecialty())
+                    .build();
+        });
+
+        List<DoctorDto> results = userService.searchPublicDoctors("cardio", null);
+
+        assertEquals(1, results.size());
+        assertEquals("Cardiology", results.get(0).getSpecialty());
+    }
+
+    @Test
+    void searchPublicDoctorsShouldMatchByClinicAddressWhenOtherFieldsDoNotMatch() {
+        UserService userService = buildService();
+        DoctorEntity doctor = doctorEntity(UUID.randomUUID(), "doctor@medback.com", "Noah", "Brown", "Neurology", "LIC-100", Boolean.TRUE);
+        doctor.setClinicAddress("Downtown Care Center");
+
+        when(doctorRepository.findAll()).thenReturn(List.of(doctor));
+        when(doctorDtoMapper.toDoctorDto(any(DoctorResponseDto.class))).thenAnswer(invocation -> {
+            DoctorResponseDto response = invocation.getArgument(0);
+            return DoctorDto.builder()
+                    .id(response.getId())
+                    .firstName(response.getFirstName())
+                    .lastName(response.getLastName())
+                    .specialty(response.getSpecialty())
+                    .clinicAddress(response.getClinicAddress())
+                    .build();
+        });
+
+        List<DoctorDto> results = userService.searchPublicDoctors("downtown", null);
+
+        assertEquals(1, results.size());
+        assertEquals("Downtown Care Center", results.get(0).getClinicAddress());
+    }
+
+    @Test
+    void searchPublicDoctorsShouldIgnoreDoctorWhenSpecialtyFilterDoesNotMatchOrDoctorSpecialtyIsNull() {
+        UserService userService = buildService();
+        DoctorEntity doctorWithoutSpecialty = doctorEntity(UUID.randomUUID(), "doctor@medback.com", "Noah", "Brown", null, "LIC-100", Boolean.TRUE);
+
+        when(doctorRepository.findAll()).thenReturn(List.of(doctorWithoutSpecialty));
+
+        List<DoctorDto> results = userService.searchPublicDoctors(null, "Cardiology");
+
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void searchPublicDoctorsShouldTreatBlankSpecialtyFilterAsNotProvided() {
+        UserService userService = buildService();
+        DoctorEntity doctor = doctorEntity(UUID.randomUUID(), "doctor@medback.com", "Noah", "Brown", "Cardiology", "LIC-100", Boolean.TRUE);
+
+        when(doctorRepository.findAll()).thenReturn(List.of(doctor));
+        when(doctorDtoMapper.toDoctorDto(any(DoctorResponseDto.class))).thenAnswer(invocation -> {
+            DoctorResponseDto response = invocation.getArgument(0);
+            return DoctorDto.builder()
+                    .id(response.getId())
+                    .firstName(response.getFirstName())
+                    .lastName(response.getLastName())
+                    .specialty(response.getSpecialty())
+                    .build();
+        });
+
+        List<DoctorDto> results = userService.searchPublicDoctors("noah", "   ");
+
+        assertEquals(1, results.size());
+    }
+
+    @Test
+    void searchPublicDoctorsShouldReturnEmptyWhenClinicAddressDoesNotMatchSearch() {
+        UserService userService = buildService();
+        DoctorEntity doctor = doctorEntity(UUID.randomUUID(), "doctor@medback.com", "Noah", "Brown", "Neurology", "LIC-100", Boolean.TRUE);
+        doctor.setClinicAddress("Downtown Care Center");
+
+        when(doctorRepository.findAll()).thenReturn(List.of(doctor));
+
+        List<DoctorDto> results = userService.searchPublicDoctors("oncology", "Neurology");
+
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void searchPublicDoctorsShouldHandleNullClinicAddressWhenNoFieldMatchesSearch() {
+        UserService userService = buildService();
+        DoctorEntity doctor = doctorEntity(UUID.randomUUID(), "doctor@medback.com", "Noah", "Brown", "Neurology", "LIC-100", Boolean.TRUE);
+        doctor.setClinicAddress(null);
+
+        when(doctorRepository.findAll()).thenReturn(List.of(doctor));
+
+        List<DoctorDto> results = userService.searchPublicDoctors("oncology", "Neurology");
+
+        assertTrue(results.isEmpty());
     }
 
     @Test
@@ -579,6 +759,41 @@ class UserServiceTest {
     }
 
     @Test
+    void updatePatientProfileImageShouldRejectNullImage() {
+        UserService userService = buildService();
+        UUID patientId = UUID.randomUUID();
+        PatientEntity patient = patientEntity(patientId, "patient@medback.com", "Ariel", "Richardson", "PAT-100-200-300", Boolean.TRUE);
+
+        when(patientRepository.findById(patientId)).thenReturn(Optional.of(patient));
+
+        BusinessRuleException exception = assertThrows(
+                BusinessRuleException.class,
+                () -> userService.updatePatientProfileImage(patientId.toString(), null)
+        );
+
+        assertEquals("Profile image file is required.", exception.getMessage());
+    }
+
+    @Test
+    void updatePatientProfileImageShouldRejectImageWithoutContentType() {
+        UserService userService = buildService();
+        UUID patientId = UUID.randomUUID();
+        PatientEntity patient = patientEntity(patientId, "patient@medback.com", "Ariel", "Richardson", "PAT-100-200-300", Boolean.TRUE);
+        MultipartFile image = mock(MultipartFile.class);
+
+        when(patientRepository.findById(patientId)).thenReturn(Optional.of(patient));
+        when(image.isEmpty()).thenReturn(false);
+        when(image.getContentType()).thenReturn(null);
+
+        BusinessRuleException exception = assertThrows(
+                BusinessRuleException.class,
+                () -> userService.updatePatientProfileImage(patientId.toString(), image)
+        );
+
+        assertEquals("Only image files are allowed for profile upload.", exception.getMessage());
+    }
+
+    @Test
     void updatePatientProfileImageShouldWrapImageProcessingFailure() throws IOException {
         UserService userService = buildService();
         UUID patientId = UUID.randomUUID();
@@ -649,6 +864,30 @@ class UserServiceTest {
     }
 
     @Test
+    void getProfileImageShouldUseDefaultContentTypeWhenStoredValueIsBlank() {
+        UserService userService = buildService();
+        UUID userId = UUID.randomUUID();
+        byte[] imageBytes = "stored-image".getBytes(UTF_8);
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .firstName("John")
+                .lastName("Smith")
+                .email("doctor@medback.com")
+                .password("encoded")
+                .role(Role.DOCTOR)
+                .isActive(Boolean.TRUE)
+                .profileImageBase64(Base64.getEncoder().encodeToString(imageBytes))
+                .profileImageContentType(" ")
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        ProfileImageContentDto response = userService.getProfileImage(userId.toString());
+
+        assertEquals("image/jpeg", response.getContentType());
+    }
+
+    @Test
     void getProfileImageShouldThrowWhenProfileImageIsMissing() {
         UserService userService = buildService();
         UUID userId = UUID.randomUUID();
@@ -661,6 +900,31 @@ class UserServiceTest {
                 .role(Role.DOCTOR)
                 .isActive(Boolean.TRUE)
                 .profileImageBase64(" ")
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> userService.getProfileImage(userId.toString())
+        );
+
+        assertEquals("Profile image not found for user id: " + userId, exception.getMessage());
+    }
+
+    @Test
+    void getProfileImageShouldThrowWhenProfileImageIsNull() {
+        UserService userService = buildService();
+        UUID userId = UUID.randomUUID();
+        UserEntity user = UserEntity.builder()
+                .id(userId)
+                .firstName("John")
+                .lastName("Smith")
+                .email("doctor@medback.com")
+                .password("encoded")
+                .role(Role.DOCTOR)
+                .isActive(Boolean.TRUE)
+                .profileImageBase64(null)
                 .build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -698,6 +962,20 @@ class UserServiceTest {
         );
 
         assertEquals("Patient not found with identifier: PAT-999-999-999", exception.getMessage());
+    }
+
+    @Test
+    void getPatientByIdShouldThrowWhenUuidCannotBeResolved() {
+        UserService userService = buildService();
+        UUID patientId = UUID.randomUUID();
+        when(patientRepository.findById(patientId)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> userService.getPatientById(patientId.toString())
+        );
+
+        assertEquals("Patient not found with identifier: " + patientId, exception.getMessage());
     }
 
     private DoctorRequestDto doctorRequest(String email, String password) {
