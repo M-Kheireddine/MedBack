@@ -1,6 +1,6 @@
 package tn.iteam.medcoreservice.utils;
 
-public class ApiUtils {
+public final class ApiUtils {
     private static final String VERSION_1 = "/v1";
     private static final String ADMIN_API = "/admin";
 
@@ -45,4 +45,7 @@ public class ApiUtils {
     public static final String API_GET_PRESCRIPTIONS_BY_PATIENT = VERSION_1 + PRESCRIPTION_API + "/patient/{patientId}";
     public static final String API_UPDATE_PRESCRIPTION = VERSION_1 + PRESCRIPTION_API + "/{prescriptionId}";
     public static final String API_DELETE_PRESCRIPTION = VERSION_1 + PRESCRIPTION_API + "/{prescriptionId}";
+
+    private ApiUtils() {
+    }
 }

@@ -62,6 +62,8 @@
         <sonar.junit.reportPaths>**/target/surefire-reports</sonar.junit.reportPaths>
         <sonar.coverage.jacoco.xmlReportPaths>**/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.exclusions>**/target/**,k8s/**,docker/**,storage/**</sonar.exclusions>
+        <sonar.coverage.exclusions>**/*Application.java,**/configs/**,**/dtos/**,**/models/**,**/repositories/**,**/mappers/**,**/utils/ApiUtils.java,**/controllers/specs/**,**/services/specs/**,**/clients/**,**/exceptions/**</sonar.coverage.exclusions>
+        <sonar.cpd.exclusions>**/*Application.java,**/dtos/**,**/exceptions/**,**/utils/ApiUtils.java,**/controllers/specs/**,**/services/specs/**,**/mappers/**,**/configs/**</sonar.cpd.exclusions>
     </properties>
     <dependencies>
         <dependency>

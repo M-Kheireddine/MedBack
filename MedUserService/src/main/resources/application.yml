@@ -46,5 +46,5 @@ management:
 medback:
   security:
     jwt:
-      secret: ${JWT_SECRET:medback-jwt-secret-key-for-development-only-please-change}
+      secret: ${JWT_SECRET:}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:1440}

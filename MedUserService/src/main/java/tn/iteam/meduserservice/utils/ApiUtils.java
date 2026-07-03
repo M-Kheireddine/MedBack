@@ -1,6 +1,6 @@
 package tn.iteam.meduserservice.utils;
 
-public class ApiUtils {
+public final class ApiUtils {
     private static final String VERSION_1 = "/v1";
 
     private static final String AUTH_API = "/auth";
@@ -40,4 +40,7 @@ public class ApiUtils {
     public static final String API_GET_PROFILE_IMAGE = VERSION_1 + FILE_API + PROFILE_API + "/{userId}";
     public static final String API_INTERNAL_GET_DOCTOR_PROFILE = VERSION_1 + INTERNAL_API + DOCTOR_API + "/{doctorId}/profile";
     public static final String API_INTERNAL_GET_PATIENT_PROFILE = VERSION_1 + INTERNAL_API + PATIENT_API + "/{patientId}/profile";
+
+    private ApiUtils() {
+    }
 }
