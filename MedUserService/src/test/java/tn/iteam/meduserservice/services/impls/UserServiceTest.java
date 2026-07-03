@@ -12,6 +12,8 @@ import tn.iteam.meduserservice.dtos.responses.PatientResponseDto;
 import tn.iteam.meduserservice.exceptions.BusinessRuleException;
 import tn.iteam.meduserservice.exceptions.DuplicateResourceException;
 import tn.iteam.meduserservice.exceptions.ResourceNotFoundException;
+import tn.iteam.meduserservice.mappers.DoctorDtoMapper;
+import tn.iteam.meduserservice.mappers.PatientDtoMapper;
 import tn.iteam.meduserservice.mappers.UserMapper;
 import tn.iteam.meduserservice.models.DoctorEntity;
 import tn.iteam.meduserservice.models.PatientEntity;
@@ -49,12 +51,20 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private DoctorDtoMapper doctorDtoMapper;
+
+    @Mock
+    private PatientDtoMapper patientDtoMapper;
+
     private UserService buildService() {
         return new UserService(
                 userRepository,
                 doctorRepository,
                 patientRepository,
                 new UserMapper(),
+                doctorDtoMapper,
+                patientDtoMapper,
                 passwordEncoder
         );
     }

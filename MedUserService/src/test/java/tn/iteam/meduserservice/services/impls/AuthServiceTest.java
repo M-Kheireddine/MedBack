@@ -61,6 +61,9 @@ class AuthServiceTest {
     private JwtService jwtService;
 
     @Mock
+    private FunctionalIdGenerator functionalIdGenerator;
+
+    @Mock
     private Authentication authentication;
 
     private AuthService authService;
@@ -74,7 +77,8 @@ class AuthServiceTest {
                 new UserMapper(),
                 passwordEncoder,
                 authenticationManager,
-                jwtService
+                jwtService,
+                functionalIdGenerator
         );
     }
 
@@ -94,6 +98,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail(requestDto.getEmail())).thenReturn(Optional.empty());
         when(patientRepository.existsBySocialSecurityNumber(requestDto.getSocialSecurityNumber())).thenReturn(false);
+        when(functionalIdGenerator.generatePatientFunctionalId()).thenReturn("PAT-123-456-789");
         when(passwordEncoder.encode(requestDto.getPassword())).thenReturn("encoded-password");
         when(patientRepository.save(any(PatientEntity.class))).thenAnswer(invocation -> {
             PatientEntity patient = invocation.getArgument(0);
@@ -114,6 +119,7 @@ class AuthServiceTest {
         assertEquals("encoded-password", savedPatient.getPassword());
         assertEquals(Role.PATIENT, savedPatient.getRole());
         assertTrue(savedPatient.getIsActive());
+        assertEquals("PAT-123-456-789", savedPatient.getFunctionalId());
         assertEquals(LocalDate.of(1992, 7, 15), savedPatient.getBirthDate());
         assertEquals("461", savedPatient.getSocialSecurityNumber());
         assertEquals("B-", savedPatient.getBloodType());
@@ -122,6 +128,7 @@ class AuthServiceTest {
         assertEquals("Ariel", response.getFirstName());
         assertEquals("ariel.richardson@medback.com", response.getEmail());
         assertEquals(Role.PATIENT, response.getRole());
+        assertEquals("PAT-123-456-789", response.getFunctionalId());
         assertEquals(createdAt, response.getCreatedAt());
         assertEquals("461", response.getSocialSecurityNumber());
     }
