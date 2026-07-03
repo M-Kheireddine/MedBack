@@ -10,10 +10,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionLineRequestDto;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionRequestDto;
+import tn.iteam.medcoreservice.dtos.responses.PrescriptionLineDto;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionResponseDto;
 import tn.iteam.medcoreservice.exceptions.GlobalExceptionHandler;
 import tn.iteam.medcoreservice.exceptions.ResourceNotFoundException;
-import tn.iteam.medcoreservice.models.PrescriptionLine;
 import tn.iteam.medcoreservice.services.impls.IPrescriptionService;
 
 import java.time.LocalDateTime;
@@ -136,8 +136,9 @@ class PrescriptionControllerTest {
                 .createdAt(LocalDateTime.of(2026, 7, 2, 12, 0))
                 .doctorNotes("Doctor notes")
                 .prescriptionLines(List.of(
-                        PrescriptionLine.builder()
+                        PrescriptionLineDto.builder()
                                 .medicationId("med-1")
+                                .medicationName("Amoxicillin")
                                 .dosage("1 tablet")
                                 .duration("5 days")
                                 .build()

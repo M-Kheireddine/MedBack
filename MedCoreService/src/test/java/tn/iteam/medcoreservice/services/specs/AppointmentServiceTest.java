@@ -5,6 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tn.iteam.medcoreservice.clients.UserProfileClient;
 import tn.iteam.medcoreservice.dtos.requests.AppointmentRequestDto;
 import tn.iteam.medcoreservice.dtos.requests.AppointmentStatusUpdateRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.AppointmentResponseDto;
@@ -23,7 +24,9 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,15 +40,32 @@ class AppointmentServiceTest {
     @Mock
     private NotificationEventPublisher notificationEventPublisher;
 
+    @Mock
+    private PatientIdentifierResolver patientIdentifierResolver;
+
+    @Mock
+    private UserProfileClient userProfileClient;
+
     private final AppointmentMapper appointmentMapper = new AppointmentMapper();
+
+    private AppointmentService buildService() {
+        when(patientIdentifierResolver.resolvePrimaryPatientId(anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
+        when(patientIdentifierResolver.resolveCandidatePatientIds(anyString()))
+                .thenAnswer(invocation -> List.of(invocation.getArgument(0, String.class)));
+
+        return new AppointmentService(
+                appointmentRepository,
+                appointmentMapper,
+                notificationEventPublisher,
+                patientIdentifierResolver,
+                userProfileClient
+        );
+    }
 
     @Test
     void createAppointmentShouldSaveScheduledAppointmentAndPublishEvent() {
-        AppointmentService appointmentService = new AppointmentService(
-                appointmentRepository,
-                appointmentMapper,
-                notificationEventPublisher
-        );
+        AppointmentService appointmentService = buildService();
 
         AppointmentRequestDto requestDto = appointmentRequest(
                 "doctor-1",
@@ -57,8 +77,8 @@ class AppointmentServiceTest {
         when(appointmentRepository.findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
                 eq("doctor-1"), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
         )).thenReturn(List.of());
-        when(appointmentRepository.findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-                eq("patient-1"), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
+        when(appointmentRepository.findByPatientIdInAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                eq(List.of("patient-1")), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
         )).thenReturn(List.of());
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> {
             Appointment appointment = invocation.getArgument(0);
@@ -83,11 +103,7 @@ class AppointmentServiceTest {
 
     @Test
     void createAppointmentShouldThrowWhenDoctorHasConflict() {
-        AppointmentService appointmentService = new AppointmentService(
-                appointmentRepository,
-                appointmentMapper,
-                notificationEventPublisher
-        );
+        AppointmentService appointmentService = buildService();
 
         AppointmentRequestDto requestDto = appointmentRequest(
                 "doctor-2",
@@ -99,8 +115,8 @@ class AppointmentServiceTest {
         when(appointmentRepository.findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
                 eq("doctor-2"), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
         )).thenReturn(List.of(appointment("appointment-conflict", "doctor-2", "patient-x", requestDto.getStartDateTime(), requestDto.getEndDateTime(), AppointmentStatus.SCHEDULED)));
-        when(appointmentRepository.findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-                eq("patient-2"), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
+        when(appointmentRepository.findByPatientIdInAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                eq(List.of("patient-2")), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
         )).thenReturn(List.of());
 
         AppointmentConflictException exception = assertThrows(
@@ -114,11 +130,7 @@ class AppointmentServiceTest {
 
     @Test
     void updateAppointmentShouldIgnoreCurrentAppointmentDuringConflictValidation() {
-        AppointmentService appointmentService = new AppointmentService(
-                appointmentRepository,
-                appointmentMapper,
-                notificationEventPublisher
-        );
+        AppointmentService appointmentService = buildService();
 
         Appointment existingAppointment = appointment("appointment-3", "doctor-3", "patient-3",
                 LocalDateTime.of(2026, 7, 3, 12, 0),
@@ -135,8 +147,8 @@ class AppointmentServiceTest {
         when(appointmentRepository.findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
                 eq("doctor-3"), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
         )).thenReturn(List.of(appointment("appointment-3", "doctor-3", "patient-3", requestDto.getStartDateTime(), requestDto.getEndDateTime(), AppointmentStatus.SCHEDULED)));
-        when(appointmentRepository.findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-                eq("patient-3"), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
+        when(appointmentRepository.findByPatientIdInAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                eq(List.of("patient-3")), eq(AppointmentStatus.SCHEDULED), eq(requestDto.getEndDateTime()), eq(requestDto.getStartDateTime())
         )).thenReturn(List.of());
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -149,11 +161,7 @@ class AppointmentServiceTest {
 
     @Test
     void updateAppointmentStatusShouldValidateAvailabilityWhenStatusIsScheduled() {
-        AppointmentService appointmentService = new AppointmentService(
-                appointmentRepository,
-                appointmentMapper,
-                notificationEventPublisher
-        );
+        AppointmentService appointmentService = buildService();
 
         Appointment existingAppointment = appointment("appointment-4", "doctor-4", "patient-4",
                 LocalDateTime.of(2026, 7, 3, 14, 0),
@@ -167,8 +175,8 @@ class AppointmentServiceTest {
         when(appointmentRepository.findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
                 eq("doctor-4"), eq(AppointmentStatus.SCHEDULED), eq(existingAppointment.getEndDateTime()), eq(existingAppointment.getStartDateTime())
         )).thenReturn(List.of());
-        when(appointmentRepository.findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-                eq("patient-4"), eq(AppointmentStatus.SCHEDULED), eq(existingAppointment.getEndDateTime()), eq(existingAppointment.getStartDateTime())
+        when(appointmentRepository.findByPatientIdInAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                eq(List.of("patient-4")), eq(AppointmentStatus.SCHEDULED), eq(existingAppointment.getEndDateTime()), eq(existingAppointment.getStartDateTime())
         )).thenReturn(List.of());
         when(appointmentRepository.save(any(Appointment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -180,11 +188,7 @@ class AppointmentServiceTest {
 
     @Test
     void updateAppointmentStatusShouldNotValidateAvailabilityWhenStatusIsCompleted() {
-        AppointmentService appointmentService = new AppointmentService(
-                appointmentRepository,
-                appointmentMapper,
-                notificationEventPublisher
-        );
+        AppointmentService appointmentService = buildService();
 
         Appointment existingAppointment = appointment("appointment-5", "doctor-5", "patient-5",
                 LocalDateTime.of(2026, 7, 3, 15, 0),
@@ -201,16 +205,12 @@ class AppointmentServiceTest {
 
         assertEquals(AppointmentStatus.COMPLETED, response.getStatus());
         verify(appointmentRepository, never()).findByDoctorIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(any(), any(), any(), any());
-        verify(appointmentRepository, never()).findByPatientIdAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(any(), any(), any(), any());
+        verify(appointmentRepository, never()).findByPatientIdInAndStatusAndStartDateTimeLessThanAndEndDateTimeGreaterThan(anyList(), any(), any(), any());
     }
 
     @Test
     void getAppointmentByIdShouldThrowWhenAppointmentDoesNotExist() {
-        AppointmentService appointmentService = new AppointmentService(
-                appointmentRepository,
-                appointmentMapper,
-                notificationEventPublisher
-        );
+        AppointmentService appointmentService = buildService();
 
         when(appointmentRepository.findById("missing-appointment")).thenReturn(Optional.empty());
 
@@ -224,11 +224,7 @@ class AppointmentServiceTest {
 
     @Test
     void getDoctorAppointmentsInRangeShouldReturnMappedResults() {
-        AppointmentService appointmentService = new AppointmentService(
-                appointmentRepository,
-                appointmentMapper,
-                notificationEventPublisher
-        );
+        AppointmentService appointmentService = buildService();
 
         LocalDateTime start = LocalDateTime.of(2026, 7, 3, 9, 0);
         LocalDateTime end = LocalDateTime.of(2026, 7, 3, 17, 0);

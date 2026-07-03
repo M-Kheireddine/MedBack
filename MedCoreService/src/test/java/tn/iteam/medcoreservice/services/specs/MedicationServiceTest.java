@@ -14,6 +14,7 @@ import tn.iteam.medcoreservice.dtos.requests.MedicationRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationAutocompleteDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationResponseDto;
 import tn.iteam.medcoreservice.exceptions.ResourceNotFoundException;
+import tn.iteam.medcoreservice.mappers.MedicationDtoMapper;
 import tn.iteam.medcoreservice.mappers.MedicationMapper;
 import tn.iteam.medcoreservice.models.Medication;
 import tn.iteam.medcoreservice.repositories.MedicationRepository;
@@ -44,6 +45,9 @@ class MedicationServiceTest {
     @Mock
     private MedicationRepository medicationRepository;
 
+    @Mock
+    private MedicationDtoMapper medicationDtoMapper;
+
     @TempDir
     Path tempDir;
 
@@ -51,7 +55,7 @@ class MedicationServiceTest {
 
     @BeforeEach
     void setUp() {
-        medicationService = new MedicationService(medicationRepository, new MedicationMapper());
+        medicationService = new MedicationService(medicationRepository, new MedicationMapper(), medicationDtoMapper);
         ReflectionTestUtils.setField(
                 medicationService,
                 "medicationImageDirectory",

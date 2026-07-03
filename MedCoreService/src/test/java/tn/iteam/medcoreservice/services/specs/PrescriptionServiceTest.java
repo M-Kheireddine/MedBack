@@ -5,14 +5,19 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tn.iteam.medcoreservice.clients.UserProfileClient;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionLineRequestDto;
 import tn.iteam.medcoreservice.dtos.requests.PrescriptionRequestDto;
+import tn.iteam.medcoreservice.dtos.responses.PrescriptionLineDto;
 import tn.iteam.medcoreservice.dtos.responses.PrescriptionResponseDto;
 import tn.iteam.medcoreservice.exceptions.ResourceNotFoundException;
+import tn.iteam.medcoreservice.mappers.PrescriptionDtoMapper;
 import tn.iteam.medcoreservice.mappers.PrescriptionMapper;
 import tn.iteam.medcoreservice.messaging.NotificationEventPublisher;
+import tn.iteam.medcoreservice.models.Medication;
 import tn.iteam.medcoreservice.models.Prescription;
 import tn.iteam.medcoreservice.models.PrescriptionLine;
+import tn.iteam.medcoreservice.repositories.MedicationRepository;
 import tn.iteam.medcoreservice.repositories.PrescriptionRepository;
 
 import java.time.LocalDateTime;
@@ -22,6 +27,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,17 +39,51 @@ class PrescriptionServiceTest {
     private PrescriptionRepository prescriptionRepository;
 
     @Mock
+    private MedicationRepository medicationRepository;
+
+    @Mock
     private NotificationEventPublisher notificationEventPublisher;
+
+    @Mock
+    private PrescriptionDtoMapper prescriptionDtoMapper;
+
+    @Mock
+    private UserProfileClient userProfileClient;
+
+    @Mock
+    private PatientIdentifierResolver patientIdentifierResolver;
 
     private final PrescriptionMapper prescriptionMapper = new PrescriptionMapper();
 
+    private PrescriptionService buildService() {
+        when(patientIdentifierResolver.resolvePrimaryPatientId(anyString()))
+                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
+        when(patientIdentifierResolver.resolveCandidatePatientIds(anyString()))
+                .thenAnswer(invocation -> List.of(invocation.getArgument(0, String.class)));
+        when(medicationRepository.findAllById(anyList())).thenReturn(List.of());
+        when(prescriptionDtoMapper.toPrescriptionLineDto(any(PrescriptionLine.class))).thenAnswer(invocation -> {
+            PrescriptionLine line = invocation.getArgument(0, PrescriptionLine.class);
+            return PrescriptionLineDto.builder()
+                    .medicationId(line.getMedicationId())
+                    .dosage(line.getDosage())
+                    .duration(line.getDuration())
+                    .build();
+        });
+
+        return new PrescriptionService(
+                prescriptionRepository,
+                medicationRepository,
+                prescriptionMapper,
+                prescriptionDtoMapper,
+                notificationEventPublisher,
+                userProfileClient,
+                patientIdentifierResolver
+        );
+    }
+
     @Test
     void createPrescriptionShouldSavePublishEventAndReturnMappedResponse() {
-        PrescriptionService prescriptionService = new PrescriptionService(
-                prescriptionRepository,
-                prescriptionMapper,
-                notificationEventPublisher
-        );
+        PrescriptionService prescriptionService = buildService();
 
         PrescriptionRequestDto requestDto = PrescriptionRequestDto.builder()
                 .doctorId("doctor-1")
@@ -86,11 +127,7 @@ class PrescriptionServiceTest {
 
     @Test
     void getAllPrescriptionsShouldReturnMappedRepositoryResults() {
-        PrescriptionService prescriptionService = new PrescriptionService(
-                prescriptionRepository,
-                prescriptionMapper,
-                notificationEventPublisher
-        );
+        PrescriptionService prescriptionService = buildService();
 
         Prescription latest = prescription("prescription-1", "doctor-1", "patient-1");
         Prescription older = prescription("prescription-2", "doctor-2", "patient-2");
@@ -105,11 +142,7 @@ class PrescriptionServiceTest {
 
     @Test
     void getPrescriptionByIdShouldReturnMappedPrescriptionWhenFound() {
-        PrescriptionService prescriptionService = new PrescriptionService(
-                prescriptionRepository,
-                prescriptionMapper,
-                notificationEventPublisher
-        );
+        PrescriptionService prescriptionService = buildService();
 
         Prescription prescription = prescription("prescription-42", "doctor-42", "patient-42");
         when(prescriptionRepository.findById("prescription-42")).thenReturn(Optional.of(prescription));
@@ -122,11 +155,7 @@ class PrescriptionServiceTest {
 
     @Test
     void getPrescriptionByIdShouldThrowWhenPrescriptionDoesNotExist() {
-        PrescriptionService prescriptionService = new PrescriptionService(
-                prescriptionRepository,
-                prescriptionMapper,
-                notificationEventPublisher
-        );
+        PrescriptionService prescriptionService = buildService();
 
         when(prescriptionRepository.findById("missing-prescription")).thenReturn(Optional.empty());
 
@@ -140,11 +169,7 @@ class PrescriptionServiceTest {
 
     @Test
     void getPrescriptionsByDoctorIdShouldReturnMappedResults() {
-        PrescriptionService prescriptionService = new PrescriptionService(
-                prescriptionRepository,
-                prescriptionMapper,
-                notificationEventPublisher
-        );
+        PrescriptionService prescriptionService = buildService();
 
         when(prescriptionRepository.findByDoctorIdOrderByCreatedAtDesc("doctor-7"))
                 .thenReturn(List.of(prescription("prescription-7", "doctor-7", "patient-7")));
@@ -157,13 +182,9 @@ class PrescriptionServiceTest {
 
     @Test
     void getPrescriptionsByPatientIdShouldReturnMappedResults() {
-        PrescriptionService prescriptionService = new PrescriptionService(
-                prescriptionRepository,
-                prescriptionMapper,
-                notificationEventPublisher
-        );
+        PrescriptionService prescriptionService = buildService();
 
-        when(prescriptionRepository.findByPatientIdOrderByCreatedAtDesc("patient-9"))
+        when(prescriptionRepository.findByPatientIdInOrderByCreatedAtDesc(List.of("patient-9")))
                 .thenReturn(List.of(prescription("prescription-9", "doctor-9", "patient-9")));
 
         List<PrescriptionResponseDto> response = prescriptionService.getPrescriptionsByPatientId("patient-9");
@@ -174,11 +195,7 @@ class PrescriptionServiceTest {
 
     @Test
     void deletePrescriptionShouldDeleteExistingPrescription() {
-        PrescriptionService prescriptionService = new PrescriptionService(
-                prescriptionRepository,
-                prescriptionMapper,
-                notificationEventPublisher
-        );
+        PrescriptionService prescriptionService = buildService();
 
         Prescription prescription = prescription("prescription-77", "doctor-77", "patient-77");
         when(prescriptionRepository.findById("prescription-77")).thenReturn(Optional.of(prescription));
