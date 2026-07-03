@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: medback-tp
+data:
+  POSTGRES_HOST: med-postgres
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: MED_USER_DB
+  SPRING_APPLICATION_NAME: med-user-service
+  MED_USER_SERVICE_PORT: "8081"
+  SPRING_PROFILES_ACTIVE: local
+  EUREKA_CLIENT_ENABLED: "false"
+  SPRING_DATASOURCE_URL: jdbc:postgresql://med-postgres:5432/MED_USER_DB
+  SPRING_JPA_HIBERNATE_DDL_AUTO: update
+  JWT_EXPIRATION_MINUTES: "1440"

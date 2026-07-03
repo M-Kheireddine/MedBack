@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: med-postgres
+  namespace: medback-tp
+spec:
+  selector:
+    app: med-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: med-user-service
+  namespace: medback-tp
+spec:
+  selector:
+    app: med-user-service
+  ports:
+    - port: 80
+      targetPort: 8081
+      nodePort: 30081
+  type: NodePort

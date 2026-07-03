@@ -8,8 +8,36 @@ def dockerServices = [
         module    : 'MedCoreService',
         dockerfile: 'MedCoreService/Dockerfile',
         imageName : 'medback-core-service'
+    ],
+    [
+        module    : 'MedNotificationService',
+        dockerfile: 'MedNotificationService/Dockerfile',
+        imageName : 'med-notification-service'
+    ],
+    [
+        module    : 'MedChatBootService',
+        dockerfile: 'MedChatBootService/Dockerfile',
+        imageName : 'med-chatboot-service'
+    ],
+    [
+        module    : 'MedConfigService',
+        dockerfile: 'MedConfigService/Dockerfile',
+        imageName : 'med-config-service'
+    ],
+    [
+        module    : 'MedDiscovery',
+        dockerfile: 'MedDiscovery/Dockerfile',
+        imageName : 'med-discovery'
+    ],
+    [
+        module    : 'MedGateway',
+        dockerfile: 'MedGateway/Dockerfile',
+        imageName : 'med-gateway'
     ]
 ]
+
+def backendModules = dockerServices.collect { it.module }.join(',')
+def artifactPatterns = (dockerServices.collect { "${it.module}/target/*.jar" } + ['**/target/site/jacoco/**/*']).join(', ')
 
 pipeline {
     agent any
@@ -77,7 +105,7 @@ pipeline {
 
         stage('Maven Test') {
             steps {
-                sh 'mvn -B -ntp -pl MedUserService,MedCoreService -am clean verify'
+                sh "mvn -B -ntp -pl ${backendModules} -am clean verify"
             }
         }
 
@@ -89,21 +117,19 @@ pipeline {
                         variable: 'SONAR_TOKEN'
                     )
                 ]) {
-                    sh '''
-                        mvn -B -ntp -pl MedUserService,MedCoreService -am \
-                          org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
-                          -DskipTests \
-                          -Dsonar.token=$SONAR_TOKEN \
-                          -Dsonar.qualitygate.wait=true \
-                          -Dsonar.qualitygate.timeout=300
-                    '''
+                    sh "mvn -B -ntp -pl ${backendModules} -am " +
+                       "org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar " +
+                       "-DskipTests " +
+                       "-Dsonar.token=\$SONAR_TOKEN " +
+                       "-Dsonar.qualitygate.wait=true " +
+                       "-Dsonar.qualitygate.timeout=300"
                 }
             }
         }
 
         stage('Maven Build') {
             steps {
-                sh 'mvn -B -ntp -pl MedUserService,MedCoreService -am package -DskipTests'
+                sh "mvn -B -ntp -pl ${backendModules} -am package -DskipTests"
             }
         }
 
@@ -150,7 +176,7 @@ pipeline {
     post {
         always {
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'MedUserService/target/*.jar, MedCoreService/target/*.jar, **/target/site/jacoco/**/*'
+            archiveArtifacts allowEmptyArchive: true, artifacts: artifactPatterns
             cleanWs deleteDirs: true, disableDeferredWipeout: true
         }
         success {
