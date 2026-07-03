@@ -3,7 +3,7 @@ package tn.iteam.medchatbootservice.services;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
@@ -12,6 +12,8 @@ import tn.iteam.medchatbootservice.dtos.responses.ChatResponse;
 import tn.iteam.medchatbootservice.exceptions.ChatbotUnavailableException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
@@ -23,8 +25,14 @@ class ChatbotServiceImplTest {
     @Mock
     private ChatClient.Builder chatClientBuilder;
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock
     private ChatClient chatClient;
+
+    @Mock
+    private ChatClient.ChatClientRequestSpec requestSpec;
+
+    @Mock
+    private ChatClient.CallResponseSpec callResponseSpec;
 
     private ChatbotServiceImpl chatbotService;
 
@@ -32,6 +40,9 @@ class ChatbotServiceImplTest {
     void setUp() {
         when(chatClientBuilder.defaultSystem("Medical prompt")).thenReturn(chatClientBuilder);
         when(chatClientBuilder.build()).thenReturn(chatClient);
+        when(chatClient.prompt()).thenReturn(requestSpec);
+        when(requestSpec.user(anyString())).thenReturn(requestSpec);
+        when(requestSpec.call()).thenReturn(callResponseSpec);
         chatbotService = new ChatbotServiceImpl(chatClientBuilder, "Medical prompt");
     }
 
@@ -43,7 +54,7 @@ class ChatbotServiceImplTest {
 
     @Test
     void replyShouldReturnChatbotResponseWhenOllamaReturnsContent() {
-        when(chatClient.prompt().user(anyString()).call().content()).thenReturn("Likely viral infection.");
+        when(callResponseSpec.content()).thenReturn("Likely viral infection.");
 
         ChatResponse response = chatbotService.reply(ChatRequest.builder()
                 .message("fever and sore throat")
@@ -55,7 +66,7 @@ class ChatbotServiceImplTest {
 
     @Test
     void replyShouldThrowWhenOllamaReturnsEmptyContent() {
-        when(chatClient.prompt().user(anyString()).call().content()).thenReturn(" ");
+        when(callResponseSpec.content()).thenReturn(" ");
 
         ChatbotUnavailableException exception = assertThrows(
                 ChatbotUnavailableException.class,
@@ -70,7 +81,7 @@ class ChatbotServiceImplTest {
 
     @Test
     void replyShouldWrapUnexpectedExceptions() {
-        when(chatClient.prompt().user(anyString()).call().content()).thenThrow(new RuntimeException("Ollama unavailable"));
+        when(callResponseSpec.content()).thenThrow(new RuntimeException("Ollama unavailable"));
 
         ChatbotUnavailableException exception = assertThrows(
                 ChatbotUnavailableException.class,
@@ -81,5 +92,51 @@ class ChatbotServiceImplTest {
         );
 
         assertEquals("Chatbot request failed. Verify that Ollama is running and the llama3 model is available.", exception.getMessage());
+    }
+
+    @Test
+    void replyShouldIncludeDoctorContextWhenDoctorIdIsPresent() {
+        when(callResponseSpec.content()).thenReturn("Clinical advice");
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+
+        chatbotService.reply(ChatRequest.builder()
+                .message("fever and cough")
+                .doctorId("doctor-9")
+                .build());
+
+        verify(requestSpec).user(promptCaptor.capture());
+        assertTrue(promptCaptor.getValue().contains("Reported symptoms: fever and cough"));
+        assertTrue(promptCaptor.getValue().contains("Doctor context id: doctor-9"));
+        assertTrue(promptCaptor.getValue().contains("Return concise clinical insights, likely considerations, and suggested next steps."));
+    }
+
+    @Test
+    void replyShouldOmitDoctorContextWhenDoctorIdIsBlank() {
+        when(callResponseSpec.content()).thenReturn("Clinical advice");
+        ArgumentCaptor<String> promptCaptor = ArgumentCaptor.forClass(String.class);
+
+        chatbotService.reply(ChatRequest.builder()
+                .message("nausea")
+                .doctorId(" ")
+                .build());
+
+        verify(requestSpec).user(promptCaptor.capture());
+        assertTrue(promptCaptor.getValue().contains("Reported symptoms: nausea"));
+        assertFalse(promptCaptor.getValue().contains("Doctor context id:"));
+    }
+
+    @Test
+    void replyShouldRethrowChatbotUnavailableExceptionWithoutWrapping() {
+        when(callResponseSpec.content()).thenThrow(new ChatbotUnavailableException("Model not ready"));
+
+        ChatbotUnavailableException exception = assertThrows(
+                ChatbotUnavailableException.class,
+                () -> chatbotService.reply(ChatRequest.builder()
+                        .message("fatigue")
+                        .doctorId("doctor-10")
+                        .build())
+        );
+
+        assertEquals("Model not ready", exception.getMessage());
     }
 }

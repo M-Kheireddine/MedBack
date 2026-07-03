@@ -255,6 +255,22 @@ class AuthServiceTest {
     }
 
     @Test
+    void registerAdminShouldThrowWhenEmailAlreadyExists() {
+        AdminRegistrationRequestDto requestDto = AdminRegistrationRequestDto.builder()
+                .firstName("System")
+                .lastName("Admin")
+                .email("admin@medback.com")
+                .password("AdminPass123")
+                .build();
+
+        when(userRepository.findByEmail(requestDto.getEmail()))
+                .thenReturn(Optional.of(UserEntity.builder().id(UUID.randomUUID()).email(requestDto.getEmail()).build()));
+
+        assertThrows(DuplicateResourceException.class, () -> authService.registerAdmin(requestDto));
+        verify(userRepository, never()).save(any(UserEntity.class));
+    }
+
+    @Test
     void registerAdminShouldThrowWhenAdminAlreadyExistsAndCurrentUserIsNotAdmin() {
         AdminRegistrationRequestDto requestDto = AdminRegistrationRequestDto.builder()
                 .firstName("System")

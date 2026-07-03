@@ -11,6 +11,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tn.iteam.meduserservice.dtos.requests.AuthRequestDto;
 import tn.iteam.meduserservice.dtos.requests.PatientRegistrationRequestDto;
+import tn.iteam.meduserservice.dtos.requests.AdminRegistrationRequestDto;
 import tn.iteam.meduserservice.dtos.responses.AuthResponseDto;
 import tn.iteam.meduserservice.dtos.responses.PatientResponseDto;
 import tn.iteam.meduserservice.dtos.responses.UserResponseDto;
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static tn.iteam.meduserservice.utils.ApiUtils.API_LOGIN;
+import static tn.iteam.meduserservice.utils.ApiUtils.API_REGISTER_ADMIN;
 import static tn.iteam.meduserservice.utils.ApiUtils.API_REGISTER_PATIENT;
 
 @WebMvcTest(AuthController.class)
@@ -48,6 +50,35 @@ class AuthControllerTest {
 
     @MockitoBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Test
+    void registerAdminShouldReturn201WhenRequestIsValid() throws Exception {
+        AdminRegistrationRequestDto requestDto = AdminRegistrationRequestDto.builder()
+                .firstName("System")
+                .lastName("Admin")
+                .email("admin@medback.com")
+                .password("AdminPass123")
+                .build();
+
+        UserResponseDto responseDto = UserResponseDto.builder()
+                .id(UUID.randomUUID())
+                .firstName("System")
+                .lastName("Admin")
+                .email("admin@medback.com")
+                .role(Role.ADMIN)
+                .createdAt(LocalDateTime.of(2026, 7, 3, 9, 0))
+                .isActive(Boolean.TRUE)
+                .build();
+
+        when(authService.registerAdmin(any(AdminRegistrationRequestDto.class))).thenReturn(responseDto);
+
+        mockMvc.perform(post(API_REGISTER_ADMIN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(requestDto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("admin@medback.com"))
+                .andExpect(jsonPath("$.role").value("ADMIN"));
+    }
 
     @Test
     void registerPatientShouldReturn201WhenRequestIsValid() throws Exception {

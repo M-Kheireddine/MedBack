@@ -56,6 +56,19 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
+    void doFilterInternalShouldSkipAuthenticationWhenAuthorizationHeaderIsNotBearer() throws ServletException, IOException {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Basic abc123");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(jwtService, never()).extractEmail(org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
     void doFilterInternalShouldAuthenticateWhenTokenIsValid() throws ServletException, IOException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer valid-token");
@@ -71,6 +84,38 @@ class JwtAuthenticationFilterTest {
 
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         assertEquals("doctor@medback.com", SecurityContextHolder.getContext().getAuthentication().getName());
+    }
+
+    @Test
+    void doFilterInternalShouldSkipAuthenticationWhenTokenDoesNotContainEmail() throws ServletException, IOException {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer valid-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        when(jwtService.extractEmail("valid-token")).thenReturn(null);
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(customUserDetailsService, never()).loadUserByUsername("doctor@medback.com");
+    }
+
+    @Test
+    void doFilterInternalShouldSkipAuthenticationWhenTokenIsInvalid() throws ServletException, IOException {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer invalid-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+        UserDetails userDetails = new User("doctor@medback.com", "ignored", List.of());
+
+        when(jwtService.extractEmail("invalid-token")).thenReturn("doctor@medback.com");
+        when(customUserDetailsService.loadUserByUsername("doctor@medback.com")).thenReturn(userDetails);
+        when(jwtService.isTokenValid("invalid-token", userDetails)).thenReturn(false);
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
     @Test

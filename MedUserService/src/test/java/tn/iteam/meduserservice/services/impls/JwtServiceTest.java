@@ -1,5 +1,6 @@
 package tn.iteam.meduserservice.services.impls;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.userdetails.User;
@@ -12,6 +13,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JwtServiceTest {
@@ -65,5 +67,20 @@ class JwtServiceTest {
         User userDetails = new User("other@medback.com", "ignored", java.util.List.of());
 
         assertFalse(jwtService.isTokenValid(token, userDetails));
+    }
+
+    @Test
+    void isTokenValidShouldThrowWhenTokenIsExpired() {
+        ReflectionTestUtils.setField(jwtService, "expirationMinutes", -1L);
+        UserEntity user = UserEntity.builder()
+                .id(UUID.randomUUID())
+                .email("doctor@medback.com")
+                .role(Role.DOCTOR)
+                .build();
+
+        String token = jwtService.generateToken(user);
+        User userDetails = new User("doctor@medback.com", "ignored", java.util.List.of());
+
+        assertThrows(ExpiredJwtException.class, () -> jwtService.isTokenValid(token, userDetails));
     }
 }

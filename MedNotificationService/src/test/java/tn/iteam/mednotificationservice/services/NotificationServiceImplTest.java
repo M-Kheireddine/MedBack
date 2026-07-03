@@ -81,6 +81,36 @@ class NotificationServiceImplTest {
     }
 
     @Test
+    void sendNotificationShouldResolvePrescriptionSubject() {
+        NotificationEvent event = NotificationEvent.builder()
+                .type("PRESCRIPTION_CREATED")
+                .recipientEmail("patient@medback.com")
+                .message("New prescription")
+                .build();
+
+        notificationService.sendNotification(event);
+
+        verify(brevoEmailService).sendHtmlEmail(eq("patient@medback.com"), eq("MedBack Prescription Notification"), org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void sendNotificationShouldFallbackToGenericSubjectForUnknownType() {
+        NotificationEvent event = NotificationEvent.builder()
+                .type("UNHANDLED_EVENT")
+                .recipientEmail("patient@medback.com")
+                .message("\"quoted\" and 'apostrophe'")
+                .build();
+
+        ArgumentCaptor<String> htmlCaptor = ArgumentCaptor.forClass(String.class);
+
+        notificationService.sendNotification(event);
+
+        verify(brevoEmailService).sendHtmlEmail(eq("patient@medback.com"), eq("MedBack Notification"), htmlCaptor.capture());
+        assertTrue(htmlCaptor.getValue().contains("&quot;quoted&quot;"));
+        assertTrue(htmlCaptor.getValue().contains("&#39;apostrophe&#39;"));
+    }
+
+    @Test
     void getStatusShouldReturnReadyStatus() {
         NotificationStatusResponseDto response = notificationService.getStatus();
 
