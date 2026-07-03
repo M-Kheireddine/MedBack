@@ -143,7 +143,7 @@ class MedicationServiceTest {
                 () -> medicationService.createAdminMedication(requestDto, imageFile)
         );
 
-        assertEquals("Only image files are allowed for medication uploads.", exception.getMessage());
+        assertEquals("Only JPEG, PNG, WEBP, and GIF images are allowed for medication uploads.", exception.getMessage());
         verifyNoInteractions(medicationRepository);
     }
 

@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import tn.iteam.medcoreservice.dtos.requests.MedicationRequestDto;
 import tn.iteam.medcoreservice.dtos.responses.MedicationAutocompleteDto;
@@ -169,15 +168,15 @@ public class MedicationService implements IMedicationService {
     }
 
     private String storeImage(MultipartFile imageFile) {
-        validateImage(imageFile);
+        ManagedImageFormat imageFormat = resolveImageFormat(imageFile);
 
         try {
             Path storageDirectory = getStorageDirectory();
             Files.createDirectories(storageDirectory);
 
-            String extension = resolveExtension(imageFile);
-            String fileName = UUID.randomUUID() + extension;
+            String fileName = UUID.randomUUID() + imageFormat.extension();
             Path targetPath = storageDirectory.resolve(fileName).normalize();
+            validateManagedStoragePath(storageDirectory, targetPath);
 
             try (java.io.InputStream inputStream = imageFile.getInputStream()) {
                 Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
@@ -188,33 +187,18 @@ public class MedicationService implements IMedicationService {
         }
     }
 
-    private void validateImage(MultipartFile imageFile) {
+    private ManagedImageFormat resolveImageFormat(MultipartFile imageFile) {
         String contentType = normalizeText(imageFile.getContentType());
-        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+        if (contentType == null) {
             throw new IllegalArgumentException("Only image files are allowed for medication uploads.");
         }
-    }
-
-    private String resolveExtension(MultipartFile imageFile) {
-        String originalFilename = normalizeText(imageFile.getOriginalFilename());
-        String extension = originalFilename == null ? null : StringUtils.getFilenameExtension(originalFilename);
-
-        if (extension != null && !extension.isBlank()) {
-            return "." + extension.toLowerCase(Locale.ROOT);
-        }
-
-        String contentType = normalizeText(imageFile.getContentType());
-        if ("image/png".equalsIgnoreCase(contentType)) {
-            return ".png";
-        }
-        if ("image/webp".equalsIgnoreCase(contentType)) {
-            return ".webp";
-        }
-        if ("image/gif".equalsIgnoreCase(contentType)) {
-            return ".gif";
-        }
-
-        return ".jpg";
+        return switch (contentType.toLowerCase(Locale.ROOT)) {
+            case "image/jpeg", "image/jpg" -> ManagedImageFormat.JPG;
+            case "image/png" -> ManagedImageFormat.PNG;
+            case "image/webp" -> ManagedImageFormat.WEBP;
+            case "image/gif" -> ManagedImageFormat.GIF;
+            default -> throw new IllegalArgumentException("Only JPEG, PNG, WEBP, and GIF images are allowed for medication uploads.");
+        };
     }
 
     private void deleteStoredImageIfManaged(String imageUrl, boolean failOnDeleteError) {
@@ -261,6 +245,12 @@ public class MedicationService implements IMedicationService {
         return normalizedCurrentImageUrl.equals(normalizedNextImageUrl);
     }
 
+    private void validateManagedStoragePath(Path storageDirectory, Path targetPath) {
+        if (!targetPath.startsWith(storageDirectory) || !storageDirectory.equals(targetPath.getParent())) {
+            throw new IllegalStateException("Medication image path is outside the configured storage directory.");
+        }
+    }
+
     private Path getStorageDirectory() {
         return Paths.get(medicationImageDirectory).toAbsolutePath().normalize();
     }
@@ -276,5 +266,22 @@ public class MedicationService implements IMedicationService {
 
         String trimmedValue = value.trim();
         return trimmedValue.isEmpty() ? null : trimmedValue;
+    }
+
+    private enum ManagedImageFormat {
+        JPG(".jpg"),
+        PNG(".png"),
+        WEBP(".webp"),
+        GIF(".gif");
+
+        private final String extension;
+
+        ManagedImageFormat(String extension) {
+            this.extension = extension;
+        }
+
+        private String extension() {
+            return extension;
+        }
     }
 }
