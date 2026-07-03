@@ -21,7 +21,7 @@ public class BrevoEmailService {
     private final String senderEmail;
     private final String senderName;
     private final boolean simulationEnabled;
-    private volatile TransactionalEmailsApi transactionalEmailsApi;
+    private TransactionalEmailsApi transactionalEmailsApi;
 
     public BrevoEmailService(
             @Value("${brevo.api.key:}") String brevoApiKey,
